@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   User, MapPin, Calendar, Mail, Phone, Download,
   Github, Linkedin, Twitter, Globe, Award, BookOpen,
-  Briefcase, Heart, Coffee, Code2, Zap, Target
+  Briefcase, Heart, Coffee, Code2, Zap, Target, GlassWater
 } from 'lucide-react';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { useAuth } from '@/contexts';
@@ -48,30 +48,30 @@ export default function AboutPage() {
       type: 'work'
     },
     {
-      year: '2021',
-      title: 'Bacharel em Ciência da Computação',
-      company: 'Universidade Federal',
+      year: '2028',
+      title: 'Bacharel & software engineering',
+      company: 'Unesa',
       description: 'Graduação com foco em Inteligência Artificial e Engenharia de Software.',
       type: 'education'
     }
   ];
 
   const personalInfo = {
-    name: 'João Silva',
-    role: 'Full Stack Developer & AI Specialist',
+    name: 'Luiz Felippe',
+    role: 'Engenheiro De Software',
     location: 'São Paulo, Brasil',
-    email: 'joao@portfolio.com',
-    phone: '+55 (11) 99999-9999',
+    email: 'luizfelippeandrade@outlook.com',
+    phone: '+55 (11) 95232-3645',
     availability: 'Disponível para projetos',
-    experience: '5+ anos'
+    experience: '3+ anos'
   };
 
-  const interests = [
+const interests = [
     { icon: <Code2 />, name: 'Coding', description: 'Apaixonado por criar soluções elegantes' },
-    { icon: <Coffee />, name: 'Coffee', description: 'Combustível para longas sessões de código' },
+    { icon: <GlassWater />, name: 'Coke', description: 'Combustível para longas sessões de código' },
     { icon: <BookOpen />, name: 'Learning', description: 'Sempre aprendendo novas tecnologias' },
     { icon: <Heart />, name: 'Open Source', description: 'Contribuindo para a comunidade' }
-  ];
+];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 pt-20">
@@ -170,7 +170,7 @@ export default function AboutPage() {
             <div className="text-lg text-gray-300 leading-relaxed space-y-4">
               <p>
                 Sou um desenvolvedor Full Stack apaixonado por criar experiências digitais excepcionais. 
-                Com mais de 5 anos de experiência, especializo-me em React, Node.js e tecnologias de IA.
+                Com mais de 3 anos de experiência, especializo-me em React, Node.js e tecnologias de IA.
               </p>
               <p>
                 Minha jornada começou com curiosidade sobre como as coisas funcionam digitalmente. 

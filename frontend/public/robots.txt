@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://joaosilva.dev/sitemap.xml
+
+# Block admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /login
+
+# Allow specific public API endpoints
+Allow: /api/public/

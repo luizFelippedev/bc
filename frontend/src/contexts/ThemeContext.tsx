@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 
 interface ThemeConfig {
   primary: string;
@@ -66,7 +66,7 @@ type ThemeAction =
   | { type: 'TOGGLE_ANIMATIONS' }
   | { type: 'TOGGLE_PARTICLES' }
   | { type: 'TOGGLE_GLASS_EFFECT' }
-  | { type: 'SET_STATE'; payload: ThemeState }; // para restaurar estado completo do localStorage
+  | { type: 'HYDRATE'; payload: ThemeState };
 
 const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
   switch (action.type) {
@@ -82,7 +82,7 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
       return { ...state, particles: !state.particles };
     case 'TOGGLE_GLASS_EFFECT':
       return { ...state, glassEffect: !state.glassEffect };
-    case 'SET_STATE':
+    case 'HYDRATE':
       return { ...action.payload, customColors: themes[action.payload.mode] };
     default:
       return state;
@@ -104,6 +104,7 @@ interface ThemeContextType {
   toggleAnimations: () => void;
   toggleParticles: () => void;
   toggleGlassEffect: () => void;
+  isLoaded: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -112,26 +113,86 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [theme, dispatch] = useReducer(themeReducer, initialThemeState);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Carrega tema do localStorage uma única vez
+  // Função para aplicar tema no DOM
+  const applyThemeToDOM = (themeState: ThemeState) => {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const colors = themeState.customColors;
+    
+    // Remove classes de tema anteriores
+    root.className = root.className.replace(/theme-\w+/g, '');
+    
+    // Adiciona nova classe de tema
+    root.classList.add(`theme-${themeState.mode}`);
+    
+    // Define CSS custom properties
+    root.style.setProperty('--color-primary', colors.primary);
+    root.style.setProperty('--color-secondary', colors.secondary);
+    root.style.setProperty('--color-accent', colors.accent);
+    root.style.setProperty('--color-background', colors.background);
+    root.style.setProperty('--color-surface', colors.surface);
+    root.style.setProperty('--color-text', colors.text);
+    
+    // Controla animações globalmente
+    if (!themeState.animations) {
+      root.style.setProperty('--animation-duration', '0s');
+      root.style.setProperty('--transition-duration', '0s');
+    } else {
+      root.style.removeProperty('--animation-duration');
+      root.style.removeProperty('--transition-duration');
+    }
+    
+    // Controla efeito glass
+    root.classList.toggle('glass-enabled', themeState.glassEffect);
+    root.classList.toggle('glass-disabled', !themeState.glassEffect);
+  };
+
+  // Carrega tema do localStorage apenas no cliente (após hidratação)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('portfolio_theme');
-    if (savedTheme) {
+    const loadTheme = () => {
       try {
-        const parsedTheme: ThemeState = JSON.parse(savedTheme);
-        dispatch({ type: 'SET_STATE', payload: parsedTheme });
+        const savedTheme = window.localStorage.getItem('portfolio_theme');
+        if (savedTheme) {
+          const parsedTheme: ThemeState = JSON.parse(savedTheme);
+          dispatch({ type: 'HYDRATE', payload: parsedTheme });
+          applyThemeToDOM(parsedTheme);
+        } else {
+          // Se não há tema salvo, aplica o tema padrão
+          applyThemeToDOM(initialThemeState);
+        }
       } catch (error) {
         console.error('Error loading theme from localStorage:', error);
+        applyThemeToDOM(initialThemeState);
+      } finally {
+        setIsLoaded(true);
       }
+    };
+
+    // Aguarda a hidratação completa antes de carregar o tema
+    if (document.readyState === 'complete') {
+      loadTheme();
+    } else {
+      window.addEventListener('load', loadTheme);
+      return () => window.removeEventListener('load', loadTheme);
     }
   }, []);
 
-  // Salva tema no localStorage sempre que ele muda
+  // Salva tema no localStorage e aplica no DOM (apenas após hidratação)
   useEffect(() => {
-    localStorage.setItem('portfolio_theme', JSON.stringify(theme));
-  }, [theme]);
+    if (isLoaded) {
+      try {
+        window.localStorage.setItem('portfolio_theme', JSON.stringify(theme));
+        applyThemeToDOM(theme);
+      } catch (error) {
+        console.error('Error saving theme to localStorage:', error);
+      }
+    }
+  }, [theme, isLoaded]);
 
-  // Funções auxiliares para facilitar uso no componente
+  // Funções auxiliares
   const setThemeMode = (mode: ThemeState['mode']) => {
     dispatch({ type: 'SET_MODE', payload: mode });
   };
@@ -147,10 +208,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     toggleAnimations,
     toggleParticles,
     toggleGlassEffect,
+    isLoaded,
   };
 
   return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
   );
 };
 
@@ -160,4 +224,58 @@ export const useTheme = (): ThemeContextType => {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
+};
+
+// Hook para aguardar carregamento do tema
+export const useThemeReady = () => {
+  const { isLoaded } = useTheme();
+  return isLoaded;
+};
+
+// Componente ThemeScript mais simples e seguro para SSR
+export const ThemeScript: React.FC = () => {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            function setTheme(mode) {
+              try {
+                document.documentElement.className = document.documentElement.className.replace(/theme-\\w+/g, '');
+                document.documentElement.classList.add('theme-' + mode);
+                
+                var colors = {
+                  light: { background: '#ffffff', text: '#1f2937' },
+                  dark: { background: '#0f172a', text: '#f8fafc' },
+                  cyberpunk: { background: '#0a0a0a', text: '#00ffff' },
+                  neon: { background: '#000000', text: '#ffffff' },
+                  matrix: { background: '#000000', text: '#00ff41' }
+                };
+                
+                var themeColors = colors[mode] || colors.dark;
+                document.documentElement.style.setProperty('--color-background', themeColors.background);
+                document.documentElement.style.setProperty('--color-text', themeColors.text);
+                document.body.style.backgroundColor = themeColors.background;
+                document.body.style.color = themeColors.text;
+              } catch (e) {
+                // Fallback silencioso
+              }
+            }
+
+            try {
+              var savedTheme = localStorage.getItem('portfolio_theme');
+              if (savedTheme) {
+                var parsed = JSON.parse(savedTheme);
+                setTheme(parsed.mode);
+              } else {
+                setTheme('dark');
+              }
+            } catch (e) {
+              setTheme('dark');
+            }
+          })();
+        `,
+      }}
+    />
+  );
 };

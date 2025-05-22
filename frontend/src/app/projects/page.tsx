@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, Filter, Grid, List, Star, Calendar, 
+import {
+  Search, Filter, Grid, List, Star, Calendar,
   ExternalLink, Github, Eye, Heart, ArrowRight,
   Code, Smartphone, Monitor, Cpu, Zap, Globe
 } from 'lucide-react';
@@ -42,6 +42,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState('recent');
 
   // Mock data se não houver projetos no contexto
+  // CORREÇÃO AQUI: Usando process.env.NEXT_PUBLIC_API_URL para as featuredImage
   const mockProjects: Project[] = [
     {
       id: '1',
@@ -54,7 +55,8 @@ export default function ProjectsPage() {
         { name: 'Node.js', category: 'backend', color: '#339933' },
         { name: 'PostgreSQL', category: 'database', color: '#336791' }
       ],
-      featuredImage: '/api/placeholder/800/600',
+      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
+      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
       links: {
         live: 'https://example.com',
         github: 'https://github.com/user/project'
@@ -76,7 +78,8 @@ export default function ProjectsPage() {
         { name: 'OpenAI', category: 'ai', color: '#412991' },
         { name: 'Firebase', category: 'backend', color: '#FFCA28' }
       ],
-      featuredImage: '/api/placeholder/800/600',
+      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
+      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
       links: {
         github: 'https://github.com/user/ai-chat'
       },
@@ -97,7 +100,8 @@ export default function ProjectsPage() {
         { name: 'TypeScript', category: 'frontend', color: '#3178C6' },
         { name: 'MongoDB', category: 'database', color: '#47A248' }
       ],
-      featuredImage: '/api/placeholder/800/600',
+      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
+      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
       links: {
         live: 'https://dashboard.example.com',
         github: 'https://github.com/user/dashboard'
@@ -119,7 +123,8 @@ export default function ProjectsPage() {
         { name: 'Web3.js', category: 'frontend', color: '#F16822' },
         { name: 'Ethereum', category: 'blockchain', color: '#627EEA' }
       ],
-      featuredImage: '/api/placeholder/800/600',
+      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
+      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
       links: {
         github: 'https://github.com/user/voting-system'
       },
@@ -131,7 +136,10 @@ export default function ProjectsPage() {
     }
   ];
 
-  const currentProjects = projects.length > 0 ? projects : mockProjects;
+  // CORREÇÃO ADICIONAL: Certifique-se de que `useData` retorna um array de `Project[]`
+  // Se `projects` do contexto for nulo ou indefinido no início, `useData()` precisa lidar com isso.
+  // Para garantir que `currentProjects` sempre seja um array, uma verificação é boa.
+  const currentProjects = projects && projects.length > 0 ? projects : mockProjects;
 
   const categories = [
     { id: 'all', name: 'Todos', icon: <Globe /> },
@@ -164,7 +172,7 @@ export default function ProjectsPage() {
       filtered = filtered.filter(project =>
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.technologies.some(tech => 
+        project.technologies.some(tech =>
           tech.name.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
@@ -196,7 +204,10 @@ export default function ProjectsPage() {
     }
 
     setFilteredProjects(filtered);
+    // As dependências deste useEffect estão corretas e não são a causa do loop.
+    // O problema estava na URL da imagem do mock data que causava um 404 persistente.
   }, [searchTerm, selectedCategory, selectedStatus, sortBy, currentProjects]);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -241,8 +252,8 @@ export default function ProjectsPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Uma coleção dos meus trabalhos mais recentes, desde aplicações web modernas 
-              até soluções de IA inovadoras. Cada projeto representa um desafio único e 
+              Uma coleção dos meus trabalhos mais recentes, desde aplicações web modernas
+              até soluções de IA inovadoras. Cada projeto representa um desafio único e
               uma oportunidade de crescimento.
             </p>
           </motion.div>
@@ -317,8 +328,8 @@ export default function ProjectsPage() {
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg ${
-                    viewMode === 'grid' 
-                      ? 'bg-primary-500 text-white' 
+                    viewMode === 'grid'
+                      ? 'bg-primary-500 text-white'
                       : 'bg-white/10 text-gray-400 hover:text-white'
                   }`}
                 >
@@ -328,8 +339,8 @@ export default function ProjectsPage() {
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg ${
-                    viewMode === 'list' 
-                      ? 'bg-primary-500 text-white' 
+                    viewMode === 'list'
+                      ? 'bg-primary-500 text-white'
                       : 'bg-white/10 text-gray-400 hover:text-white'
                   }`}
                 >
@@ -372,12 +383,16 @@ export default function ProjectsPage() {
                   {/* Image */}
                   <div className={viewMode === 'grid' ? 'relative overflow-hidden' : 'relative overflow-hidden w-64 flex-shrink-0'}>
                     <img
+                      // CORREÇÃO AQUI: Certifique-se de que `project.featuredImage`
+                      // já está usando a URL completa do backend, ou adicione aqui.
+                      // Se o seu backend serve a imagem diretamente (ex: /api/placeholder/800/600),
+                      // então a variável de ambiente no mockProjects já resolve.
                       src={project.featuredImage}
                       alt={project.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    
+
                     {/* Featured Badge */}
                     {project.featured && (
                       <div className="absolute top-4 left-4">

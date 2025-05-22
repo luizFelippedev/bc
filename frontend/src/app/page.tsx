@@ -81,7 +81,7 @@ export default function HomePage() {
                 <div className="w-full h-full bg-gray-900 rounded-full" />
               </motion.div>
               <img
-                src="/api/placeholder/200/200"
+                src="https://ui-avatars.com/api/?name=Portfolio&size=200&background=60a5fa&color=ffffff&rounded=true"
                 alt="Profile"
                 className="relative w-48 h-48 rounded-full object-cover border-4 border-white/20 shadow-2xl"
               />

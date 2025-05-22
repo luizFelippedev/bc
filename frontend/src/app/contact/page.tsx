@@ -466,13 +466,13 @@ export default function ContactPage() {
               <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
                 <div className="flex items-start space-x-4">
                   <img
-                    src="/api/placeholder/60/60"
+                    src="https://via.placeholder.com/48"
                     alt="Cliente"
                     className="w-12 h-12 rounded-full border-2 border-primary-500/30"
                   />
                   <div>
                     <p className="text-gray-300 italic mb-3">
-                      "João entregou um trabalho excepcional. Comunicação clara, 
+                      "Luiz Felippe entregou um trabalho excepcional. Comunicação clara, 
                       código limpo e resultado final superou nossas expectativas!"
                     </p>
                     <div className="text-sm">

@@ -2,33 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables para temas */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* Tema padrão (dark) */
+  --color-primary: #60a5fa;
+  --color-secondary: #a78bfa;
+  --color-accent: #fbbf24;
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #f8fafc;
+  
+  /* Animações */
+  --animation-duration: 0.3s;
+  --transition-duration: 0.2s;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+/* Tema Light */
+.theme-light {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-accent: #f59e0b;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-text: #1f2937;
 }
 
+/* Tema Dark */
+.theme-dark {
+  --color-primary: #60a5fa;
+  --color-secondary: #a78bfa;
+  --color-accent: #fbbf24;
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #f8fafc;
+}
+
+/* Tema Cyberpunk */
+.theme-cyberpunk {
+  --color-primary: #00ffff;
+  --color-secondary: #ff00ff;
+  --color-accent: #ffff00;
+  --color-background: #0a0a0a;
+  --color-surface: #1a1a2e;
+  --color-text: #00ffff;
+}
+
+/* Tema Neon */
+.theme-neon {
+  --color-primary: #ff0080;
+  --color-secondary: #8000ff;
+  --color-accent: #00ff80;
+  --color-background: #000000;
+  --color-surface: #111111;
+  --color-text: #ffffff;
+}
+
+/* Tema Matrix */
+.theme-matrix {
+  --color-primary: #00ff41;
+  --color-secondary: #008f11;
+  --color-accent: #41ff00;
+  --color-background: #000000;
+  --color-surface: #001100;
+  --color-text: #00ff41;
+}
+
+/* Body styling */
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: background-color var(--transition-duration) ease,
+              color var(--transition-duration) ease;
 }
 
+/* Desabilitar animações quando necessário */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Classes utilitárias para temas */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Cores usando variáveis CSS */
+  .text-theme-primary {
+    color: var(--color-primary);
+  }
+  
+  .text-theme-secondary {
+    color: var(--color-secondary);
+  }
+  
+  .text-theme-accent {
+    color: var(--color-accent);
+  }
+  
+  .bg-theme-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .bg-theme-secondary {
+    background-color: var(--color-secondary);
+  }
+  
+  .bg-theme-surface {
+    background-color: var(--color-surface);
+  }
+  
+  .border-theme-primary {
+    border-color: var(--color-primary);
+  }
+  
+  /* Gradientes temáticos */
+  .gradient-theme-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  }
+  
+  .gradient-theme-text {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }
 
@@ -42,12 +142,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.5);
+  background: var(--color-primary);
   border-radius: 4px;
+  opacity: 0.5;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.7);
+  opacity: 0.7;
 }
 
 /* Animações customizadas */
@@ -57,10 +158,64 @@ body {
 }
 
 @keyframes glow {
-  0% { box-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6, 0 0 15px #3b82f6; }
-  100% { box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6, 0 0 30px #3b82f6; }
+  0% { 
+    box-shadow: 0 0 5px var(--color-primary), 
+                0 0 10px var(--color-primary), 
+                0 0 15px var(--color-primary); 
+  }
+  100% { 
+    box-shadow: 0 0 10px var(--color-primary), 
+                0 0 20px var(--color-primary), 
+                0 0 30px var(--color-primary); 
+  }
 }
 
+@keyframes pulse-theme {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes matrix-rain {
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes cyberpunk-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+  75% { opacity: 0.9; }
+}
+
+@keyframes neon-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--color-primary),
+                 0 0 10px var(--color-primary),
+                 0 0 15px var(--color-primary);
+  }
+  50% {
+    text-shadow: 0 0 10px var(--color-primary),
+                 0 0 20px var(--color-primary),
+                 0 0 30px var(--color-primary);
+  }
+}
+
+/* Classes de animação */
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -69,9 +224,99 @@ body {
   animation: glow 2s ease-in-out infinite alternate;
 }
 
+.animate-pulse-theme {
+  animation: pulse-theme 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-matrix-rain {
+  animation: matrix-rain 3s linear infinite;
+}
+
+.animate-cyberpunk-flicker {
+  animation: cyberpunk-flicker 0.15s infinite;
+}
+
+.animate-neon-glow {
+  animation: neon-glow 1.5s ease-in-out infinite alternate;
+}
+
 /* Glass effect */
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-enabled .glass {
+  backdrop-filter: blur(10px);
+}
+
+.glass-disabled .glass {
+  backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Temas específicos - efeitos especiais */
+.theme-cyberpunk .glass {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.theme-neon .glass {
+  background: rgba(255, 0, 128, 0.1);
+  border: 1px solid rgba(255, 0, 128, 0.3);
+}
+
+.theme-matrix .glass {
+  background: rgba(0, 255, 65, 0.1);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+/* Efeitos específicos por tema */
+.theme-cyberpunk * {
+  font-family: 'Courier New', monospace;
+}
+
+.theme-matrix .text-theme-primary {
+  animation: neon-glow 2s ease-in-out infinite alternate;
+}
+
+.theme-neon .text-theme-primary {
+  text-shadow: 0 0 10px var(--color-primary);
+}
+
+/* Transições suaves */
+* {
+  transition-duration: var(--transition-duration);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    var(--color-surface) 25%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    var(--color-surface) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+  }
 }
