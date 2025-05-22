@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Grid, List, Star, Calendar,
@@ -41,9 +41,8 @@ export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('recent');
 
-  // Mock data se não houver projetos no contexto
-  // CORREÇÃO AQUI: Usando process.env.NEXT_PUBLIC_API_URL para as featuredImage
-  const mockProjects: Project[] = [
+  // Mock data fixo para evitar re-renders desnecessários
+  const mockProjects: Project[] = useMemo(() => [
     {
       id: '1',
       title: 'E-commerce Platform',
@@ -55,8 +54,7 @@ export default function ProjectsPage() {
         { name: 'Node.js', category: 'backend', color: '#339933' },
         { name: 'PostgreSQL', category: 'database', color: '#336791' }
       ],
-      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
-      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
+      featuredImage: '/api/placeholder/800/600',
       links: {
         live: 'https://example.com',
         github: 'https://github.com/user/project'
@@ -78,8 +76,7 @@ export default function ProjectsPage() {
         { name: 'OpenAI', category: 'ai', color: '#412991' },
         { name: 'Firebase', category: 'backend', color: '#FFCA28' }
       ],
-      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
-      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
+      featuredImage: '/api/placeholder/800/600',
       links: {
         github: 'https://github.com/user/ai-chat'
       },
@@ -100,8 +97,7 @@ export default function ProjectsPage() {
         { name: 'TypeScript', category: 'frontend', color: '#3178C6' },
         { name: 'MongoDB', category: 'database', color: '#47A248' }
       ],
-      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
-      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
+      featuredImage: '/api/placeholder/800/600',
       links: {
         live: 'https://dashboard.example.com',
         github: 'https://github.com/user/dashboard'
@@ -123,8 +119,7 @@ export default function ProjectsPage() {
         { name: 'Web3.js', category: 'frontend', color: '#F16822' },
         { name: 'Ethereum', category: 'blockchain', color: '#627EEA' }
       ],
-      // Ajustado para usar a variável de ambiente para a URL da imagem de placeholder
-      featuredImage: `${process.env.NEXT_PUBLIC_API_URL}/placeholder/800/600`,
+      featuredImage: '/api/placeholder/800/600',
       links: {
         github: 'https://github.com/user/voting-system'
       },
@@ -134,46 +129,48 @@ export default function ProjectsPage() {
       likes: 32,
       startDate: '2024-03-01'
     }
-  ];
+  ], []);
 
-  // CORREÇÃO ADICIONAL: Certifique-se de que `useData` retorna um array de `Project[]`
-  // Se `projects` do contexto for nulo ou indefinido no início, `useData()` precisa lidar com isso.
-  // Para garantir que `currentProjects` sempre seja um array, uma verificação é boa.
-  const currentProjects = projects && projects.length > 0 ? projects : mockProjects;
+  // Usa useMemo para evitar recálculo desnecessário
+  const currentProjects = useMemo(() => {
+    return projects && projects.length > 0 ? projects : mockProjects;
+  }, [projects, mockProjects]);
 
-  const categories = [
+  const categories = useMemo(() => [
     { id: 'all', name: 'Todos', icon: <Globe /> },
     { id: 'web_app', name: 'Web Apps', icon: <Monitor /> },
     { id: 'mobile_app', name: 'Mobile', icon: <Smartphone /> },
     { id: 'ai_ml', name: 'IA & ML', icon: <Cpu /> },
     { id: 'blockchain', name: 'Blockchain', icon: <Zap /> },
     { id: 'api', name: 'APIs', icon: <Code /> }
-  ];
+  ], []);
 
-  const statusOptions = [
+  const statusOptions = useMemo(() => [
     { id: 'all', name: 'Todos os Status' },
     { id: 'completed', name: 'Concluído' },
     { id: 'in_progress', name: 'Em Desenvolvimento' },
     { id: 'concept', name: 'Conceito' }
-  ];
+  ], []);
 
-  const sortOptions = [
+  const sortOptions = useMemo(() => [
     { id: 'recent', name: 'Mais Recentes' },
     { id: 'popular', name: 'Mais Populares' },
     { id: 'featured', name: 'Destaques' },
     { id: 'alphabetical', name: 'A-Z' }
-  ];
+  ], []);
 
+  // UseEffect otimizado
   useEffect(() => {
     let filtered = [...currentProjects];
 
     // Filtrar por busca
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.title.toLowerCase().includes(searchLower) ||
+        project.shortDescription.toLowerCase().includes(searchLower) ||
         project.technologies.some(tech =>
-          tech.name.toLowerCase().includes(searchTerm.toLowerCase())
+          tech.name.toLowerCase().includes(searchLower)
         )
       );
     }
@@ -204,10 +201,7 @@ export default function ProjectsPage() {
     }
 
     setFilteredProjects(filtered);
-    // As dependências deste useEffect estão corretas e não são a causa do loop.
-    // O problema estava na URL da imagem do mock data que causava um 404 persistente.
-  }, [searchTerm, selectedCategory, selectedStatus, sortBy, currentProjects]);
-
+  }, [currentProjects, searchTerm, selectedCategory, selectedStatus, sortBy]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -383,13 +377,10 @@ export default function ProjectsPage() {
                   {/* Image */}
                   <div className={viewMode === 'grid' ? 'relative overflow-hidden' : 'relative overflow-hidden w-64 flex-shrink-0'}>
                     <img
-                      // CORREÇÃO AQUI: Certifique-se de que `project.featuredImage`
-                      // já está usando a URL completa do backend, ou adicione aqui.
-                      // Se o seu backend serve a imagem diretamente (ex: /api/placeholder/800/600),
-                      // então a variável de ambiente no mockProjects já resolve.
                       src={project.featuredImage}
                       alt={project.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 

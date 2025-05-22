@@ -1,16 +1,125 @@
 // Custom hooks for the portfolio application
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { debounce, throttle, localStorage as ls, sessionStorage as ss } from '@/utils';
 
 // Export existing hooks
 export { useIntersectionObserver } from './useIntersectionObserver';
 export { useParticles } from './useParticles';
 
+// Utility functions - implementação local para evitar dependências circulares
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout;
+  
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
+const throttle = <T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): ((...args: Parameters<T>) => void) => {
+  let inThrottle: boolean;
+  
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+};
+
+// Safe localStorage wrapper
+const safeLocalStorage = {
+  get: <T>(key: string): T | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${key}":`, error);
+      return null;
+    }
+  },
+  
+  set: <T>(key: string, value: T): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn(`Error setting localStorage key "${key}":`, error);
+    }
+  },
+  
+  remove: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(key);
+    } catch (error) {
+      console.warn(`Error removing localStorage key "${key}":`, error);
+    }
+  },
+  
+  clear: (): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.clear();
+    } catch (error) {
+      console.warn('Error clearing localStorage:', error);
+    }
+  }
+};
+
+// Safe sessionStorage wrapper
+const safeSessionStorage = {
+  get: <T>(key: string): T | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const item = window.sessionStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      console.warn(`Error reading sessionStorage key "${key}":`, error);
+      return null;
+    }
+  },
+  
+  set: <T>(key: string, value: T): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn(`Error setting sessionStorage key "${key}":`, error);
+    }
+  },
+  
+  remove: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch (error) {
+      console.warn(`Error removing sessionStorage key "${key}":`, error);
+    }
+  },
+  
+  clear: (): void => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.clear();
+    } catch (error) {
+      console.warn('Error clearing sessionStorage:', error);
+    }
+  }
+};
+
 // Local Storage Hook
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = ls.get<T>(key);
+      const item = safeLocalStorage.get<T>(key);
       return item !== null ? item : initialValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
@@ -22,7 +131,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      ls.set(key, valueToStore);
+      safeLocalStorage.set(key, valueToStore);
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
@@ -30,7 +139,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   const removeValue = useCallback(() => {
     try {
-      ls.remove(key);
+      safeLocalStorage.remove(key);
       setStoredValue(initialValue);
     } catch (error) {
       console.warn(`Error removing localStorage key "${key}":`, error);
@@ -44,7 +153,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 export function useSessionStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = ss.get<T>(key);
+      const item = safeSessionStorage.get<T>(key);
       return item !== null ? item : initialValue;
     } catch (error) {
       console.warn(`Error reading sessionStorage key "${key}":`, error);
@@ -56,7 +165,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      ss.set(key, valueToStore);
+      safeSessionStorage.set(key, valueToStore);
     } catch (error) {
       console.warn(`Error setting sessionStorage key "${key}":`, error);
     }
@@ -243,10 +352,12 @@ export function useWindowSize() {
       });
     }
 
-    window.addEventListener('resize', handleResize);
-    handleResize();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      handleResize();
 
-    return () => window.removeEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
 
   return windowSize;
@@ -257,15 +368,24 @@ export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const media = window.matchMedia(query);
     if (media.matches !== matches) {
       setMatches(media.matches);
     }
     
     const listener = () => setMatches(media.matches);
-    media.addEventListener('change', listener);
     
-    return () => media.removeEventListener('change', listener);
+    // Use the modern addEventListener API
+    if (media.addEventListener) {
+      media.addEventListener('change', listener);
+      return () => media.removeEventListener('change', listener);
+    } else {
+      // Fallback for older browsers
+      media.addListener(listener);
+      return () => media.removeListener(listener);
+    }
   }, [matches, query]);
 
   return matches;
@@ -276,6 +396,8 @@ export function useScrollPosition() {
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const updatePosition = throttle(() => {
       setScrollPosition({
         x: window.pageXOffset,
@@ -298,6 +420,8 @@ export function useScrollDirection() {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const updateScrollDirection = throttle(() => {
       const currentScrollY = window.pageYOffset;
       
@@ -322,6 +446,8 @@ export function useIdle(timeout = 5000) {
   const [isIdle, setIsIdle] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     let timeoutId: NodeJS.Timeout;
 
     const resetTimeout = () => {
@@ -356,6 +482,8 @@ export function useOnlineStatus() {
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -422,37 +550,14 @@ export function useFetch<T>(url: string | null, options?: RequestInit) {
   return { data, loading, error };
 }
 
-// Theme Hook
-export function useTheme() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
-
-  useEffect(() => {
-    const savedTheme = ls.get<'light' | 'dark' | 'system'>('theme') || 'system';
-    setTheme(savedTheme);
-  }, []);
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-    
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.toggle('dark', systemTheme === 'dark');
-    } else {
-      root.classList.toggle('dark', theme === 'dark');
-    }
-    
-    ls.set('theme', theme);
-  }, [theme]);
-
-  return [theme, setTheme] as const;
-}
-
 // Animation Hook
 export function useAnimation() {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -543,6 +648,8 @@ export function useForm<T extends Record<string, any>>(
 // Keyboard Hook
 export function useKeyboard(targetKey: string, handler: () => void, deps: any[] = []) {
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === targetKey) {
         handler();

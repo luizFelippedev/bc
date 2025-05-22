@@ -374,7 +374,48 @@ export interface SocketUser {
   };
 }
 
-// Extend global Window interface
+// Utility types for better TypeScript support
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+export type Nullable<T> = T | null;
+
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type RequiredBy<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+// API Utility types
+export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+export interface ApiRequestConfig {
+  method: ApiMethod;
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  retries?: number;
+}
+
+// Form types
+export interface FormField {
+  name: string;
+  type: 'text' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file';
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  validation?: (value: any) => string | undefined;
+  options?: Array<{ label: string; value: string }>;
+}
+
+export interface FormConfig {
+  fields: FormField[];
+  onSubmit: (data: Record<string, any>) => void | Promise<void>;
+  initialValues?: Record<string, any>;
+  submitLabel?: string;
+  resetLabel?: string;
+}
+
+// Enhanced Window interface
 declare global {
   interface Window {
     gtag: (...args: any[]) => void;
@@ -382,31 +423,126 @@ declare global {
     fs?: {
       readFile: (path: string, options?: { encoding?: string }) => Promise<Uint8Array | string>;
     };
+    // PWA related
+    deferredPrompt?: any;
+    // Performance monitoring
+    webVitals?: {
+      getCLS: (callback: (metric: any) => void) => void;
+      getFID: (callback: (metric: any) => void) => void;
+      getFCP: (callback: (metric: any) => void) => void;
+      getLCP: (callback: (metric: any) => void) => void;
+      getTTFB: (callback: (metric: any) => void) => void;
+    };
   }
 
+  // Enhanced Navigator interface
+  interface Navigator {
+    standalone?: boolean;
+    connection?: {
+      effectiveType: string;
+      downlink: number;
+      rtt: number;
+    };
+  }
+
+  // Environment variables
   namespace NodeJS {
     interface ProcessEnv {
+      // Base environment
       NODE_ENV: 'development' | 'production' | 'test';
+      
+      // Application URLs
       NEXT_PUBLIC_APP_URL: string;
       NEXT_PUBLIC_API_URL: string;
+      
+      // Database
       DATABASE_URL: string;
       MONGODB_URI: string;
       REDIS_URL: string;
+      
+      // Authentication
       JWT_SECRET: string;
+      JWT_EXPIRES_IN: string;
+      REFRESH_TOKEN_SECRET: string;
+      REFRESH_TOKEN_EXPIRES_IN: string;
+      
+      // File Storage
       CLOUDINARY_CLOUD_NAME: string;
       CLOUDINARY_API_KEY: string;
       CLOUDINARY_API_SECRET: string;
-      GOOGLE_ANALYTICS_ID?: string;
+      AWS_ACCESS_KEY_ID: string;
+      AWS_SECRET_ACCESS_KEY: string;
+      AWS_REGION: string;
+      AWS_S3_BUCKET: string;
+      
+      // Analytics
+      NEXT_PUBLIC_GA_TRACKING_ID: string;
+      GOOGLE_ANALYTICS_ID: string;
+      
+      // Email Services
       EMAIL_HOST: string;
       EMAIL_PORT: string;
       EMAIL_USER: string;
       EMAIL_PASS: string;
+      SENDGRID_API_KEY: string;
+      RESEND_API_KEY: string;
+      
+      // Social Auth
+      GOOGLE_CLIENT_ID: string;
+      GOOGLE_CLIENT_SECRET: string;
+      GITHUB_CLIENT_ID: string;
+      GITHUB_CLIENT_SECRET: string;
+      LINKEDIN_CLIENT_ID: string;
+      LINKEDIN_CLIENT_SECRET: string;
+      
+      // External APIs
+      OPENAI_API_KEY: string;
+      STRIPE_SECRET_KEY: string;
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: string;
+      
+      // Monitoring & Logging
+      SENTRY_DSN: string;
+      NEXT_PUBLIC_SENTRY_DSN: string;
+      LOGROCKET_APP_ID: string;
+      
+      // Feature Flags
+      FEATURE_ANALYTICS: string;
+      FEATURE_PWA: string;
+      FEATURE_DARK_MODE: string;
+      
+      // Security
+      ENCRYPTION_KEY: string;
+      CORS_ORIGIN: string;
+      RATE_LIMIT_MAX: string;
+      RATE_LIMIT_WINDOW: string;
+      
+      // Development
+      NEXT_PUBLIC_DEBUG: string;
+      DISABLE_SSL: string;
+      
+      // Cache
+      CACHE_TTL: string;
+      REDIS_CACHE_PREFIX: string;
+      
+      // Webhooks
+      WEBHOOK_SECRET: string;
+      GITHUB_WEBHOOK_SECRET: string;
+      
+      // Deployment
+      VERCEL_URL: string;
+      VERCEL_ENV: string;
+      RAILWAY_ENVIRONMENT: string;
+      
+      // Custom
+      PORTFOLIO_ADMIN_EMAIL: string;
+      CONTACT_NOTIFICATION_EMAIL: string;
+      BACKUP_SCHEDULE: string;
     }
   }
 }
 
 // Socket.IO extension
-declare module 'socket.io/client' {
+declare module 'socket.io-client' {
   interface Socket {
     userId?: string;
     userRole?: string;
@@ -414,4 +550,107 @@ declare module 'socket.io/client' {
   }
 }
 
+// Framer Motion extensions
+declare module 'framer-motion' {
+  interface AnimationProps {
+    layoutId?: string;
+  }
+}
+
+// Next.js extensions
+declare module 'next/router' {
+  interface NextRouter {
+    query: {
+      [key: string]: string | string[] | undefined;
+    };
+  }
+}
+
+// React extensions for custom props
+declare module 'react' {
+  interface HTMLAttributes<T> {
+    css?: any; // For emotion/styled-components
+  }
+}
+
+// Tailwind CSS IntelliSense
+declare module 'tailwindcss/lib/util/flattenColorPalette' {
+  function flattenColorPalette(colors: any): any;
+  export = flattenColorPalette;
+}
+
+// Export types for easier importing
+export type {
+  DeepPartial,
+  Nullable,
+  Optional,
+  RequiredBy,
+  ApiMethod,
+  ApiRequestConfig,
+  FormField,
+  FormConfig
+};
+
+// Re-export commonly used React types
+export type {
+  ReactNode,
+  ReactElement,
+  ComponentType,
+  FC,
+  PropsWithChildren,
+  RefObject,
+  MutableRefObject,
+  CSSProperties
+} from 'react';
+
 export {};
+
+// Additional utility types for specific use cases
+export type ProjectStatus = Project['status'];
+export type ProjectCategory = Project['category'];
+export type CertificateLevel = Certificate['level'];
+export type CertificateType = Certificate['type'];
+export type ThemeMode = ThemeState['mode'];
+export type UserRole = User['role'];
+
+// Branded types for better type safety
+export type ProjectId = string & { readonly brand: unique symbol };
+export type UserId = string & { readonly brand: unique symbol };
+export type CertificateId = string & { readonly brand: unique symbol };
+
+// Enum-like objects for better intellisense
+export const PROJECT_STATUSES = {
+  CONCEPT: 'concept',
+  DEVELOPMENT: 'development',
+  TESTING: 'testing',
+  DEPLOYED: 'deployed',
+  MAINTENANCE: 'maintenance',
+  ARCHIVED: 'archived'
+} as const;
+
+export const PROJECT_CATEGORIES = {
+  WEB_APP: 'web_app',
+  MOBILE_APP: 'mobile_app',
+  DESKTOP_APP: 'desktop_app',
+  AI_ML: 'ai_ml',
+  BLOCKCHAIN: 'blockchain',
+  IOT: 'iot',
+  GAME: 'game',
+  API: 'api'
+} as const;
+
+export const CERTIFICATE_LEVELS = {
+  FOUNDATIONAL: 'foundational',
+  ASSOCIATE: 'associate',
+  PROFESSIONAL: 'professional',
+  EXPERT: 'expert',
+  MASTER: 'master'
+} as const;
+
+export const THEME_MODES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+  CYBERPUNK: 'cyberpunk',
+  NEON: 'neon',
+  MATRIX: 'matrix'
+} as const;

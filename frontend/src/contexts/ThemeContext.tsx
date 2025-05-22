@@ -1,5 +1,15 @@
 'use client';
-import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
+
+// ==== Interfaces ====
 
 interface ThemeConfig {
   primary: string;
@@ -17,6 +27,25 @@ interface ThemeState {
   particles: boolean;
   glassEffect: boolean;
 }
+
+type ThemeAction =
+  | { type: 'SET_MODE'; payload: ThemeState['mode'] }
+  | { type: 'TOGGLE_ANIMATIONS' }
+  | { type: 'TOGGLE_PARTICLES' }
+  | { type: 'TOGGLE_GLASS_EFFECT' }
+  | { type: 'HYDRATE'; payload: ThemeState };
+
+interface ThemeContextType {
+  theme: ThemeState;
+  dispatch: React.Dispatch<ThemeAction>;
+  setThemeMode: (mode: ThemeState['mode']) => void;
+  toggleAnimations: () => void;
+  toggleParticles: () => void;
+  toggleGlassEffect: () => void;
+  isLoaded: boolean;
+}
+
+// ==== Temas disponíveis ====
 
 const themes: Record<ThemeState['mode'], ThemeConfig> = {
   light: {
@@ -61,21 +90,22 @@ const themes: Record<ThemeState['mode'], ThemeConfig> = {
   },
 };
 
-type ThemeAction =
-  | { type: 'SET_MODE'; payload: ThemeState['mode'] }
-  | { type: 'TOGGLE_ANIMATIONS' }
-  | { type: 'TOGGLE_PARTICLES' }
-  | { type: 'TOGGLE_GLASS_EFFECT' }
-  | { type: 'HYDRATE'; payload: ThemeState };
+// ==== Estado Inicial ====
+
+const initialThemeState: ThemeState = {
+  mode: 'dark',
+  customColors: themes.dark,
+  animations: true,
+  particles: true,
+  glassEffect: true,
+};
+
+// ==== Reducer ====
 
 const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
   switch (action.type) {
     case 'SET_MODE':
-      return {
-        ...state,
-        mode: action.payload,
-        customColors: themes[action.payload],
-      };
+      return { ...state, mode: action.payload, customColors: themes[action.payload] };
     case 'TOGGLE_ANIMATIONS':
       return { ...state, animations: !state.animations };
     case 'TOGGLE_PARTICLES':
@@ -89,193 +119,192 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
   }
 };
 
-const initialThemeState: ThemeState = {
-  mode: 'dark',
-  customColors: themes.dark,
-  animations: true,
-  particles: true,
-  glassEffect: true,
-};
-
-interface ThemeContextType {
-  theme: ThemeState;
-  dispatch: React.Dispatch<ThemeAction>;
-  setThemeMode: (mode: ThemeState['mode']) => void;
-  toggleAnimations: () => void;
-  toggleParticles: () => void;
-  toggleGlassEffect: () => void;
-  isLoaded: boolean;
-}
+// ==== Context ====
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+// ==== Provider ====
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, dispatch] = useReducer(themeReducer, initialThemeState);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Função para aplicar tema no DOM
-  const applyThemeToDOM = (themeState: ThemeState) => {
+  const applyThemeToDOM = useCallback((themeState: ThemeState) => {
     if (typeof document === 'undefined') return;
 
-    const root = document.documentElement;
-    const colors = themeState.customColors;
-    
-    // Remove classes de tema anteriores
-    root.className = root.className.replace(/theme-\w+/g, '');
-    
-    // Adiciona nova classe de tema
-    root.classList.add(`theme-${themeState.mode}`);
-    
-    // Define CSS custom properties
-    root.style.setProperty('--color-primary', colors.primary);
-    root.style.setProperty('--color-secondary', colors.secondary);
-    root.style.setProperty('--color-accent', colors.accent);
-    root.style.setProperty('--color-background', colors.background);
-    root.style.setProperty('--color-surface', colors.surface);
-    root.style.setProperty('--color-text', colors.text);
-    
-    // Controla animações globalmente
-    if (!themeState.animations) {
-      root.style.setProperty('--animation-duration', '0s');
-      root.style.setProperty('--transition-duration', '0s');
-    } else {
-      root.style.removeProperty('--animation-duration');
-      root.style.removeProperty('--transition-duration');
-    }
-    
-    // Controla efeito glass
-    root.classList.toggle('glass-enabled', themeState.glassEffect);
-    root.classList.toggle('glass-disabled', !themeState.glassEffect);
-  };
+    requestAnimationFrame(() => {
+      const root = document.documentElement;
+      const { customColors } = themeState;
 
-  // Carrega tema do localStorage apenas no cliente (após hidratação)
+      root.className = root.className.replace(/\btheme-\w+\b/g, '');
+      root.classList.add(`theme-${themeState.mode}`);
+
+      const cssVars = {
+        '--color-primary': customColors.primary,
+        '--color-secondary': customColors.secondary,
+        '--color-accent': customColors.accent,
+        '--color-background': customColors.background,
+        '--color-surface': customColors.surface,
+        '--color-text': customColors.text,
+      };
+
+      for (const [key, value] of Object.entries(cssVars)) {
+        root.style.setProperty(key, value);
+      }
+
+      root.classList.toggle('no-animations', !themeState.animations);
+      root.classList.toggle('glass-enabled', themeState.glassEffect);
+      root.classList.toggle('glass-disabled', !themeState.glassEffect);
+
+      if (!themeState.animations) {
+        root.style.setProperty('--animation-duration', '0s');
+        root.style.setProperty('--transition-duration', '0s');
+      } else {
+        root.style.removeProperty('--animation-duration');
+        root.style.removeProperty('--transition-duration');
+      }
+
+      document.body.style.backgroundColor = customColors.background;
+      document.body.style.color = customColors.text;
+    });
+  }, []);
+
   useEffect(() => {
     const loadTheme = () => {
       try {
-        const savedTheme = window.localStorage.getItem('portfolio_theme');
-        if (savedTheme) {
-          const parsedTheme: ThemeState = JSON.parse(savedTheme);
-          dispatch({ type: 'HYDRATE', payload: parsedTheme });
-          applyThemeToDOM(parsedTheme);
+        const saved = localStorage.getItem('portfolio_theme');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.mode && themes[parsed.mode]) {
+            dispatch({ type: 'HYDRATE', payload: parsed });
+            applyThemeToDOM({ ...parsed, customColors: themes[parsed.mode] });
+          } else {
+            applyThemeToDOM(initialThemeState);
+          }
         } else {
-          // Se não há tema salvo, aplica o tema padrão
           applyThemeToDOM(initialThemeState);
         }
-      } catch (error) {
-        console.error('Error loading theme from localStorage:', error);
+      } catch (e) {
+        console.error('Error loading theme:', e);
         applyThemeToDOM(initialThemeState);
       } finally {
         setIsLoaded(true);
       }
     };
 
-    // Aguarda a hidratação completa antes de carregar o tema
     if (document.readyState === 'complete') {
       loadTheme();
     } else {
       window.addEventListener('load', loadTheme);
       return () => window.removeEventListener('load', loadTheme);
     }
+  }, [applyThemeToDOM]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    try {
+      const toSave = {
+        mode: theme.mode,
+        animations: theme.animations,
+        particles: theme.particles,
+        glassEffect: theme.glassEffect,
+      };
+      localStorage.setItem('portfolio_theme', JSON.stringify(toSave));
+      applyThemeToDOM(theme);
+    } catch (e) {
+      console.error('Error saving theme:', e);
+    }
+  }, [theme, isLoaded, applyThemeToDOM]);
+
+  const setThemeMode = useCallback((mode: ThemeState['mode']) => {
+    dispatch({ type: 'SET_MODE', payload: mode });
   }, []);
 
-  // Salva tema no localStorage e aplica no DOM (apenas após hidratação)
-  useEffect(() => {
-    if (isLoaded) {
-      try {
-        window.localStorage.setItem('portfolio_theme', JSON.stringify(theme));
-        applyThemeToDOM(theme);
-      } catch (error) {
-        console.error('Error saving theme to localStorage:', error);
-      }
-    }
-  }, [theme, isLoaded]);
+  const toggleAnimations = useCallback(() => {
+    dispatch({ type: 'TOGGLE_ANIMATIONS' });
+  }, []);
 
-  // Funções auxiliares
-  const setThemeMode = (mode: ThemeState['mode']) => {
-    dispatch({ type: 'SET_MODE', payload: mode });
-  };
+  const toggleParticles = useCallback(() => {
+    dispatch({ type: 'TOGGLE_PARTICLES' });
+  }, []);
 
-  const toggleAnimations = () => dispatch({ type: 'TOGGLE_ANIMATIONS' });
-  const toggleParticles = () => dispatch({ type: 'TOGGLE_PARTICLES' });
-  const toggleGlassEffect = () => dispatch({ type: 'TOGGLE_GLASS_EFFECT' });
-
-  const value: ThemeContextType = {
-    theme,
-    dispatch,
-    setThemeMode,
-    toggleAnimations,
-    toggleParticles,
-    toggleGlassEffect,
-    isLoaded,
-  };
+  const toggleGlassEffect = useCallback(() => {
+    dispatch({ type: 'TOGGLE_GLASS_EFFECT' });
+  }, []);
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        dispatch,
+        setThemeMode,
+        toggleAnimations,
+        toggleParticles,
+        toggleGlassEffect,
+        isLoaded,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 };
 
+// ==== Hooks ====
+
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };
 
-// Hook para aguardar carregamento do tema
 export const useThemeReady = () => {
-  const { isLoaded } = useTheme();
-  return isLoaded;
+  return useTheme().isLoaded;
 };
 
-// Componente ThemeScript mais simples e seguro para SSR
-export const ThemeScript: React.FC = () => {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `
-          (function() {
-            function setTheme(mode) {
-              try {
-                document.documentElement.className = document.documentElement.className.replace(/theme-\\w+/g, '');
-                document.documentElement.classList.add('theme-' + mode);
-                
-                var colors = {
-                  light: { background: '#ffffff', text: '#1f2937' },
-                  dark: { background: '#0f172a', text: '#f8fafc' },
-                  cyberpunk: { background: '#0a0a0a', text: '#00ffff' },
-                  neon: { background: '#000000', text: '#ffffff' },
-                  matrix: { background: '#000000', text: '#00ff41' }
-                };
-                
-                var themeColors = colors[mode] || colors.dark;
-                document.documentElement.style.setProperty('--color-background', themeColors.background);
-                document.documentElement.style.setProperty('--color-text', themeColors.text);
-                document.body.style.backgroundColor = themeColors.background;
-                document.body.style.color = themeColors.text;
-              } catch (e) {
-                // Fallback silencioso
-              }
-            }
+// ==== Script SSR Seguro ====
 
-            try {
-              var savedTheme = localStorage.getItem('portfolio_theme');
-              if (savedTheme) {
-                var parsed = JSON.parse(savedTheme);
-                setTheme(parsed.mode);
-              } else {
-                setTheme('dark');
-              }
-            } catch (e) {
-              setTheme('dark');
+export const ThemeScript: React.FC = () => (
+  <script
+    dangerouslySetInnerHTML={{
+      __html: `
+        (function() {
+          try {
+            const saved = localStorage.getItem('portfolio_theme');
+            const parsed = saved ? JSON.parse(saved) : null;
+            const mode = parsed?.mode || 'dark';
+            const animations = parsed?.animations !== false;
+            const glassEffect = parsed?.glassEffect !== false;
+
+            const colors = {
+              light: { background: '#ffffff', text: '#1f2937', primary: '#3b82f6', secondary: '#8b5cf6' },
+              dark: { background: '#0f172a', text: '#f8fafc', primary: '#60a5fa', secondary: '#a78bfa' },
+              cyberpunk: { background: '#0a0a0a', text: '#00ffff', primary: '#00ffff', secondary: '#ff00ff' },
+              neon: { background: '#000000', text: '#ffffff', primary: '#ff0080', secondary: '#8000ff' },
+              matrix: { background: '#000000', text: '#00ff41', primary: '#00ff41', secondary: '#008f11' }
+            }[mode];
+
+            const root = document.documentElement;
+            root.className = root.className.replace(/theme-\\w+/g, '');
+            root.classList.add('theme-' + mode);
+            root.style.setProperty('--color-background', colors.background);
+            root.style.setProperty('--color-text', colors.text);
+            root.style.setProperty('--color-primary', colors.primary);
+            root.style.setProperty('--color-secondary', colors.secondary);
+            document.body.style.backgroundColor = colors.background;
+            document.body.style.color = colors.text;
+            root.classList.toggle('no-animations', !animations);
+            root.classList.toggle('glass-enabled', glassEffect);
+            root.classList.toggle('glass-disabled', !glassEffect);
+            if (!animations) {
+              root.style.setProperty('--animation-duration', '0s');
+              root.style.setProperty('--transition-duration', '0s');
             }
-          })();
-        `,
-      }}
-    />
-  );
-};
+          } catch (e) {
+            console.warn('Theme init error:', e);
+          }
+        })();
+      `,
+    }}
+  />
+);
