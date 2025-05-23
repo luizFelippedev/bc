@@ -1,7 +1,7 @@
 // Utility functions and helpers for the portfolio application
 
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -13,44 +13,47 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format date to a readable string
  */
-export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+export function formatDate(
+  date: Date | string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+
   const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
     ...options,
   };
-  
-  return new Intl.DateTimeFormat('pt-BR', defaultOptions).format(dateObj);
+
+  return new Intl.DateTimeFormat("pt-BR", defaultOptions).format(dateObj);
 }
 
 /**
  * Format date to relative time (e.g., "2 days ago")
  */
 export function formatRelativeTime(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
-  
+
   const intervals = [
-    { label: 'ano', seconds: 31536000 },
-    { label: 'mês', seconds: 2592000 },
-    { label: 'semana', seconds: 604800 },
-    { label: 'dia', seconds: 86400 },
-    { label: 'hora', seconds: 3600 },
-    { label: 'minuto', seconds: 60 },
+    { label: "ano", seconds: 31536000 },
+    { label: "mês", seconds: 2592000 },
+    { label: "semana", seconds: 604800 },
+    { label: "dia", seconds: 86400 },
+    { label: "hora", seconds: 3600 },
+    { label: "minuto", seconds: 60 },
   ];
-  
+
   for (const interval of intervals) {
     const count = Math.floor(diffInSeconds / interval.seconds);
     if (count >= 1) {
-      return `há ${count} ${interval.label}${count > 1 ? 's' : ''}`;
+      return `há ${count} ${interval.label}${count > 1 ? "s" : ""}`;
     }
   }
-  
-  return 'agora mesmo';
+
+  return "agora mesmo";
 }
 
 /**
@@ -58,10 +61,10 @@ export function formatRelativeTime(date: Date | string): string {
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -73,10 +76,10 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -90,8 +93,9 @@ export function throttle<T extends (...args: any[]) => any>(
  * Generate a random ID
  */
 export function generateId(length = 8): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -106,17 +110,17 @@ export function slugify(text: string): string {
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
 }
 
 /**
  * Truncate text to a specific length
  */
-export function truncate(text: string, length: number, suffix = '...'): string {
+export function truncate(text: string, length: number, suffix = "..."): string {
   if (text.length <= length) return text;
   return text.substring(0, length).trim() + suffix;
 }
@@ -124,7 +128,7 @@ export function truncate(text: string, length: number, suffix = '...'): string {
 /**
  * Format numbers with proper separators
  */
-export function formatNumber(num: number, locale = 'pt-BR'): string {
+export function formatNumber(num: number, locale = "pt-BR"): string {
   return new Intl.NumberFormat(locale).format(num);
 }
 
@@ -132,13 +136,13 @@ export function formatNumber(num: number, locale = 'pt-BR'): string {
  * Format file size
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  
+  if (bytes === 0) return "0 Bytes";
+
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 /**
@@ -171,15 +175,15 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       return true;
     } else {
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      const success = document.execCommand('copy');
+      const success = document.execCommand("copy");
       textArea.remove();
       return success;
     }
@@ -192,12 +196,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
  * Download a file from URL
  */
 export function downloadFile(url: string, filename?: string): void {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   if (filename) {
     link.download = filename;
   }
-  link.target = '_blank';
+  link.target = "_blank";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -208,10 +212,10 @@ export function downloadFile(url: string, filename?: string): void {
  */
 export function getInitials(name: string): string {
   return name
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase())
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase())
     .slice(0, 2)
-    .join('');
+    .join("");
 }
 
 /**
@@ -219,9 +223,21 @@ export function getInitials(name: string): string {
  */
 export function generateRandomColor(): string {
   const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-    '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-    '#10AC84', '#EE5A24', '#0984E3', '#6C5CE7', '#A29BFE'
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FECA57",
+    "#FF9FF3",
+    "#54A0FF",
+    "#5F27CD",
+    "#00D2D3",
+    "#FF9F43",
+    "#10AC84",
+    "#EE5A24",
+    "#0984E3",
+    "#6C5CE7",
+    "#A29BFE",
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
@@ -229,7 +245,10 @@ export function generateRandomColor(): string {
 /**
  * Calculate reading time
  */
-export function calculateReadingTime(text: string, wordsPerMinute = 200): number {
+export function calculateReadingTime(
+  text: string,
+  wordsPerMinute = 200,
+): number {
   const words = text.trim().split(/\s+/).length;
   return Math.ceil(words / wordsPerMinute);
 }
@@ -239,25 +258,29 @@ export function calculateReadingTime(text: string, wordsPerMinute = 200): number
  */
 export function escapeHtml(text: string): string {
   const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
 /**
  * Convert hex color to RGB
  */
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+export function hexToRgb(
+  hex: string,
+): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
 }
 
 /**
@@ -265,17 +288,17 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
  */
 export function getContrastColor(hexColor: string): string {
   const rgb = hexToRgb(hexColor);
-  if (!rgb) return '#000000';
-  
+  if (!rgb) return "#000000";
+
   const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-  return brightness > 128 ? '#000000' : '#ffffff';
+  return brightness > 128 ? "#000000" : "#ffffff";
 }
 
 /**
  * Check if device is mobile
  */
 export function isMobile(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   return window.innerWidth < 768;
 }
 
@@ -283,17 +306,17 @@ export function isMobile(): boolean {
  * Check if device is tablet
  */
 export function isTablet(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   return window.innerWidth >= 768 && window.innerWidth < 1024;
 }
 
 /**
  * Get device type
  */
-export function getDeviceType(): 'mobile' | 'tablet' | 'desktop' {
-  if (isMobile()) return 'mobile';
-  if (isTablet()) return 'tablet';
-  return 'desktop';
+export function getDeviceType(): "mobile" | "tablet" | "desktop" {
+  if (isMobile()) return "mobile";
+  if (isTablet()) return "tablet";
+  return "desktop";
 }
 
 /**
@@ -305,7 +328,7 @@ export function smoothScrollTo(elementId: string, offset = 0): void {
     const targetPosition = element.offsetTop - offset;
     window.scrollTo({
       top: targetPosition,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   }
 }
@@ -314,11 +337,14 @@ export function smoothScrollTo(elementId: string, offset = 0): void {
  * Get scroll percentage
  */
 export function getScrollPercentage(): number {
-  if (typeof window === 'undefined') return 0;
-  
-  const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-  
+  if (typeof window === "undefined") return 0;
+
+  const winScroll =
+    document.body.scrollTop || document.documentElement.scrollTop;
+  const height =
+    document.documentElement.scrollHeight -
+    document.documentElement.clientHeight;
+
   return height > 0 ? (winScroll / height) * 100 : 0;
 }
 
@@ -327,11 +353,11 @@ export function getScrollPercentage(): number {
  */
 export function formatCurrency(
   amount: number,
-  currency = 'BRL',
-  locale = 'pt-BR'
+  currency = "BRL",
+  locale = "pt-BR",
 ): string {
   return new Intl.NumberFormat(locale, {
-    style: 'currency',
+    style: "currency",
     currency: currency,
   }).format(amount);
 }
@@ -344,7 +370,8 @@ export function isInViewport(element: HTMLElement): boolean {
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.bottom <=
+      (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
 }
@@ -354,7 +381,7 @@ export function isInViewport(element: HTMLElement): boolean {
  */
 export const localStorage = {
   get: <T>(key: string): T | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : null;
@@ -362,33 +389,33 @@ export const localStorage = {
       return null;
     }
   },
-  
+
   set: <T>(key: string, value: T): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch {
       // Silently fail
     }
   },
-  
+
   remove: (key: string): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.localStorage.removeItem(key);
     } catch {
       // Silently fail
     }
   },
-  
+
   clear: (): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.localStorage.clear();
     } catch {
       // Silently fail
     }
-  }
+  },
 };
 
 /**
@@ -396,7 +423,7 @@ export const localStorage = {
  */
 export const sessionStorage = {
   get: <T>(key: string): T | null => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     try {
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : null;
@@ -404,40 +431,40 @@ export const sessionStorage = {
       return null;
     }
   },
-  
+
   set: <T>(key: string, value: T): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.sessionStorage.setItem(key, JSON.stringify(value));
     } catch {
       // Silently fail
     }
   },
-  
+
   remove: (key: string): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.sessionStorage.removeItem(key);
     } catch {
       // Silently fail
     }
   },
-  
+
   clear: (): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       window.sessionStorage.clear();
     } catch {
       // Silently fail
     }
-  }
+  },
 };
 
 /**
  * Wait for a specified amount of time
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -446,24 +473,24 @@ export function sleep(ms: number): Promise<void> {
 export async function retry<T>(
   fn: () => Promise<T>,
   maxAttempts = 3,
-  delay = 1000
+  delay = 1000,
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       if (attempt === maxAttempts) {
         throw lastError;
       }
-      
+
       await sleep(delay * Math.pow(2, attempt - 1));
     }
   }
-  
+
   throw lastError!;
 }
 
@@ -471,14 +498,14 @@ export async function retry<T>(
  * Check if code is running on server
  */
 export function isServer(): boolean {
-  return typeof window === 'undefined';
+  return typeof window === "undefined";
 }
 
 /**
  * Check if code is running on client
  */
 export function isClient(): boolean {
-  return typeof window !== 'undefined';
+  return typeof window !== "undefined";
 }
 
 /**
@@ -486,7 +513,7 @@ export function isClient(): boolean {
  */
 export function getQueryParam(param: string): string | null {
   if (isServer()) return null;
-  
+
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get(param);
 }
@@ -496,10 +523,10 @@ export function getQueryParam(param: string): string | null {
  */
 export function setQueryParam(param: string, value: string): void {
   if (isServer()) return;
-  
+
   const url = new URL(window.location.href);
   url.searchParams.set(param, value);
-  window.history.replaceState({}, '', url.toString());
+  window.history.replaceState({}, "", url.toString());
 }
 
 /**
@@ -507,10 +534,10 @@ export function setQueryParam(param: string, value: string): void {
  */
 export function removeQueryParam(param: string): void {
   if (isServer()) return;
-  
+
   const url = new URL(window.location.href);
   url.searchParams.delete(param);
-  window.history.replaceState({}, '', url.toString());
+  window.history.replaceState({}, "", url.toString());
 }
 
 /**
@@ -519,25 +546,25 @@ export function removeQueryParam(param: string): void {
 export const analytics = {
   track: (event: string, properties?: Record<string, any>) => {
     if (isServer()) return;
-    
+
     // Google Analytics
-    if (typeof window.gtag !== 'undefined') {
-      window.gtag('event', event, properties);
+    if (typeof window.gtag !== "undefined") {
+      window.gtag("event", event, properties);
     }
-    
+
     // Custom analytics
-    console.log('Analytics Event:', { event, properties });
+    console.log("Analytics Event:", { event, properties });
   },
-  
+
   page: (path: string) => {
     if (isServer()) return;
-    
-    if (typeof window.gtag !== 'undefined') {
-      window.gtag('config', process.env.NEXT_PUBLIC_GA_TRACKING_ID, {
+
+    if (typeof window.gtag !== "undefined") {
+      window.gtag("config", process.env.NEXT_PUBLIC_GA_TRACKING_ID, {
         page_path: path,
       });
     }
-  }
+  },
 };
 
 /**
@@ -545,18 +572,18 @@ export const analytics = {
  */
 export const errorUtils = {
   log: (error: Error, context?: Record<string, any>) => {
-    console.error('Error:', error.message, { error, context });
-    
+    console.error("Error:", error.message, { error, context });
+
     // Send to error tracking service
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       // Sentry, LogRocket, etc.
     }
   },
-  
-  notify: (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+
+  notify: (message: string, type: "error" | "warning" | "info" = "error") => {
     // Show toast notification
     console.log(`${type.toUpperCase()}: ${message}`);
-  }
+  },
 };
 
 /**
@@ -566,20 +593,20 @@ export const apiUtils = {
   isNetworkError: (error: any): boolean => {
     return !error.response && error.request;
   },
-  
+
   isTimeoutError: (error: any): boolean => {
-    return error.code === 'ECONNABORTED';
+    return error.code === "ECONNABORTED";
   },
-  
+
   getErrorMessage: (error: any): string => {
     if (error.response?.data?.message) {
       return error.response.data.message;
     }
-    
+
     if (error.message) {
       return error.message;
     }
-    
-    return 'Ocorreu um erro inesperado';
-  }
+
+    return "Ocorreu um erro inesperado";
+  },
 };

@@ -1,13 +1,29 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  ExternalLink, Github, Calendar, User, Target, CheckCircle,
-  Star, Heart, Eye, Share2, Download, ArrowLeft, ChevronLeft,
-  ChevronRight, Play, Code, Lightbulb, Trophy, Users
-} from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+"use client";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  ExternalLink,
+  Github,
+  Calendar,
+  User,
+  Target,
+  CheckCircle,
+  Star,
+  Heart,
+  Eye,
+  Share2,
+  Download,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Code,
+  Lightbulb,
+  Trophy,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 interface ProjectDetail {
   id: string;
@@ -86,10 +102,11 @@ export default function ProjectDetailPage() {
   // Mock data for demonstration
   useEffect(() => {
     const mockProject: ProjectDetail = {
-      id: '1',
-      title: 'E-commerce Platform',
-      slug: 'ecommerce-platform',
-      shortDescription: 'Plataforma completa de e-commerce com React, Node.js e PostgreSQL',
+      id: "1",
+      title: "E-commerce Platform",
+      slug: "ecommerce-platform",
+      shortDescription:
+        "Plataforma completa de e-commerce com React, Node.js e PostgreSQL",
       fullDescription: `Este projeto é uma plataforma completa de e-commerce desenvolvida com as mais modernas tecnologias do mercado. O objetivo foi criar uma solução escalável, segura e de alta performance para vendas online.
 
       A plataforma inclui um painel administrativo completo, sistema de pagamentos integrado, gestão de inventário em tempo real, sistema de reviews e avaliações, chat ao vivo com os clientes, e um sistema de recomendação baseado em IA.
@@ -97,153 +114,155 @@ export default function ProjectDetailPage() {
       Durante o desenvolvimento, enfrentamos diversos desafios técnicos interessantes, incluindo otimização de consultas ao banco de dados, implementação de cache distribuído, e integração com múltiplos gateways de pagamento.
 
       O resultado final foi uma plataforma robusta que suporta milhares de transações simultâneas e oferece uma experiência de usuário excepcional tanto para compradores quanto para vendedores.`,
-      category: 'web_app',
-      status: 'completed',
+      category: "web_app",
+      status: "completed",
       featured: true,
       technologies: [
-        { name: 'React', category: 'frontend', color: '#61DAFB' },
-        { name: 'Node.js', category: 'backend', color: '#339933' },
-        { name: 'PostgreSQL', category: 'database', color: '#336791' },
-        { name: 'Redis', category: 'cache', color: '#DC382D' },
-        { name: 'Docker', category: 'devops', color: '#2496ED' },
-        { name: 'AWS', category: 'cloud', color: '#FF9900' },
-        { name: 'Stripe', category: 'payment', color: '#635BFF' },
-        { name: 'Socket.io', category: 'realtime', color: '#010101' }
+        { name: "React", category: "frontend", color: "#61DAFB" },
+        { name: "Node.js", category: "backend", color: "#339933" },
+        { name: "PostgreSQL", category: "database", color: "#336791" },
+        { name: "Redis", category: "cache", color: "#DC382D" },
+        { name: "Docker", category: "devops", color: "#2496ED" },
+        { name: "AWS", category: "cloud", color: "#FF9900" },
+        { name: "Stripe", category: "payment", color: "#635BFF" },
+        { name: "Socket.io", category: "realtime", color: "#010101" },
       ],
       media: {
-        featuredImage: '/api/placeholder/1200/800',
+        featuredImage: "/api/placeholder/1200/800",
         gallery: [
-          '/api/placeholder/800/600',
-          '/api/placeholder/800/600',
-          '/api/placeholder/800/600',
-          '/api/placeholder/800/600',
-          '/api/placeholder/800/600'
+          "/api/placeholder/800/600",
+          "/api/placeholder/800/600",
+          "/api/placeholder/800/600",
+          "/api/placeholder/800/600",
+          "/api/placeholder/800/600",
         ],
         videos: [
           {
-            url: 'https://example.com/demo.mp4',
-            title: 'Demo da Aplicação',
-            thumbnail: '/api/placeholder/400/300'
-          }
-        ]
+            url: "https://example.com/demo.mp4",
+            title: "Demo da Aplicação",
+            thumbnail: "/api/placeholder/400/300",
+          },
+        ],
       },
       links: {
-        live: 'https://ecommerce-demo.com',
-        github: 'https://github.com/user/ecommerce-platform',
-        documentation: 'https://docs.ecommerce-demo.com'
+        live: "https://ecommerce-demo.com",
+        github: "https://github.com/user/ecommerce-platform",
+        documentation: "https://docs.ecommerce-demo.com",
       },
       timeline: {
-        startDate: '2024-01-15',
-        endDate: '2024-05-30',
-        duration: '4 meses'
+        startDate: "2024-01-15",
+        endDate: "2024-05-30",
+        duration: "4 meses",
       },
       team: [
         {
-          name: 'João Silva',
-          role: 'Full Stack Developer',
-          avatar: '/api/placeholder/100/100'
+          name: "João Silva",
+          role: "Full Stack Developer",
+          avatar: "/api/placeholder/100/100",
         },
         {
-          name: 'Maria Santos',
-          role: 'UI/UX Designer',
-          avatar: '/api/placeholder/100/100'
+          name: "Maria Santos",
+          role: "UI/UX Designer",
+          avatar: "/api/placeholder/100/100",
         },
         {
-          name: 'Pedro Costa',
-          role: 'DevOps Engineer',
-          avatar: '/api/placeholder/100/100'
-        }
+          name: "Pedro Costa",
+          role: "DevOps Engineer",
+          avatar: "/api/placeholder/100/100",
+        },
       ],
       challenges: [
-        'Escalabilidade para suportar alto volume de transações simultâneas',
-        'Integração com múltiplos gateways de pagamento internacionais',
-        'Implementação de sistema de cache distribuído para melhor performance',
-        'Desenvolvimento de sistema de recomendação usando machine learning',
-        'Garantir segurança PCI DSS para processamento de pagamentos'
+        "Escalabilidade para suportar alto volume de transações simultâneas",
+        "Integração com múltiplos gateways de pagamento internacionais",
+        "Implementação de sistema de cache distribuído para melhor performance",
+        "Desenvolvimento de sistema de recomendação usando machine learning",
+        "Garantir segurança PCI DSS para processamento de pagamentos",
       ],
       solutions: [
-        'Implementação de microserviços com load balancing automático',
-        'Criação de adapter pattern para integração unificada de pagamentos',
-        'Uso de Redis Cluster para cache distribuído e sessions',
-        'Desenvolvimento de algoritmo colaborativo usando TensorFlow.js',
-        'Implementação de criptografia end-to-end e auditoria completa'
+        "Implementação de microserviços com load balancing automático",
+        "Criação de adapter pattern para integração unificada de pagamentos",
+        "Uso de Redis Cluster para cache distribuído e sessions",
+        "Desenvolvimento de algoritmo colaborativo usando TensorFlow.js",
+        "Implementação de criptografia end-to-end e auditoria completa",
       ],
       results: [
         {
-          metric: 'Performance',
-          value: '99.9%',
-          description: 'Uptime médio da aplicação'
+          metric: "Performance",
+          value: "99.9%",
+          description: "Uptime médio da aplicação",
         },
         {
-          metric: 'Conversão',
-          value: '+45%',
-          description: 'Aumento na taxa de conversão'
+          metric: "Conversão",
+          value: "+45%",
+          description: "Aumento na taxa de conversão",
         },
         {
-          metric: 'Velocidade',
-          value: '1.2s',
-          description: 'Tempo médio de carregamento'
+          metric: "Velocidade",
+          value: "1.2s",
+          description: "Tempo médio de carregamento",
         },
         {
-          metric: 'Satisfação',
-          value: '4.8/5',
-          description: 'Avaliação dos usuários'
-        }
+          metric: "Satisfação",
+          value: "4.8/5",
+          description: "Avaliação dos usuários",
+        },
       ],
       features: [
-        'Catálogo de produtos com busca avançada e filtros',
-        'Carrinho de compras com cálculo de frete em tempo real',
-        'Sistema de pagamento com Stripe, PayPal e PIX',
-        'Painel administrativo com analytics em tempo real',
-        'Sistema de reviews e avaliações',
-        'Chat ao vivo com suporte',
-        'Notificações push em tempo real',
-        'Sistema de cupons e promoções',
-        'Gestão de inventário automatizada',
-        'Relatórios detalhados de vendas'
+        "Catálogo de produtos com busca avançada e filtros",
+        "Carrinho de compras com cálculo de frete em tempo real",
+        "Sistema de pagamento com Stripe, PayPal e PIX",
+        "Painel administrativo com analytics em tempo real",
+        "Sistema de reviews e avaliações",
+        "Chat ao vivo com suporte",
+        "Notificações push em tempo real",
+        "Sistema de cupons e promoções",
+        "Gestão de inventário automatizada",
+        "Relatórios detalhados de vendas",
       ],
       testimonials: [
         {
-          author: 'Ana Carolina',
-          role: 'Gerente de E-commerce',
-          content: 'A plataforma superou nossas expectativas. A interface é intuitiva e as funcionalidades são exatamente o que precisávamos.',
-          rating: 5
+          author: "Ana Carolina",
+          role: "Gerente de E-commerce",
+          content:
+            "A plataforma superou nossas expectativas. A interface é intuitiva e as funcionalidades são exatamente o que precisávamos.",
+          rating: 5,
         },
         {
-          author: 'Carlos Mendes',
-          role: 'CTO',
-          content: 'Excelente arquitetura e performance. A equipe demonstrou grande expertise técnica.',
-          rating: 5
-        }
+          author: "Carlos Mendes",
+          role: "CTO",
+          content:
+            "Excelente arquitetura e performance. A equipe demonstrou grande expertise técnica.",
+          rating: 5,
+        },
       ],
       stats: {
         views: 1250,
         likes: 89,
-        shares: 23
+        shares: 23,
       },
       relatedProjects: [
         {
-          id: '2',
-          title: 'AI Chat Assistant',
-          slug: 'ai-chat-assistant',
-          featuredImage: '/api/placeholder/300/200',
-          category: 'mobile_app'
+          id: "2",
+          title: "AI Chat Assistant",
+          slug: "ai-chat-assistant",
+          featuredImage: "/api/placeholder/300/200",
+          category: "mobile_app",
         },
         {
-          id: '3',
-          title: 'Portfolio Dashboard',
-          slug: 'portfolio-dashboard',
-          featuredImage: '/api/placeholder/300/200',
-          category: 'web_app'
+          id: "3",
+          title: "Portfolio Dashboard",
+          slug: "portfolio-dashboard",
+          featuredImage: "/api/placeholder/300/200",
+          category: "web_app",
         },
         {
-          id: '4',
-          title: 'Blockchain Voting',
-          slug: 'blockchain-voting',
-          featuredImage: '/api/placeholder/300/200',
-          category: 'blockchain'
-        }
-      ]
+          id: "4",
+          title: "Blockchain Voting",
+          slug: "blockchain-voting",
+          featuredImage: "/api/placeholder/300/200",
+          category: "blockchain",
+        },
+      ],
     };
 
     setProject(mockProject);
@@ -251,16 +270,16 @@ export default function ProjectDetailPage() {
 
   const nextImage = () => {
     if (project) {
-      setCurrentImageIndex((prev) => 
-        prev === project.media.gallery.length - 1 ? 0 : prev + 1
+      setCurrentImageIndex((prev) =>
+        prev === project.media.gallery.length - 1 ? 0 : prev + 1,
       );
     }
   };
 
   const prevImage = () => {
     if (project) {
-      setCurrentImageIndex((prev) => 
-        prev === 0 ? project.media.gallery.length - 1 : prev - 1
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? project.media.gallery.length - 1 : prev - 1,
       );
     }
   };
@@ -279,7 +298,7 @@ export default function ProjectDetailPage() {
           url: window.location.href,
         });
       } catch (err) {
-        console.log('Error sharing:', err);
+        console.log("Error sharing:", err);
       }
     } else {
       // Fallback para copiar URL
@@ -322,11 +341,15 @@ export default function ProjectDetailPage() {
                 {project.featured && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full">
                     <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                    <span className="text-yellow-400 text-xs font-medium">Projeto Destaque</span>
+                    <span className="text-yellow-400 text-xs font-medium">
+                      Projeto Destaque
+                    </span>
                   </div>
                 )}
                 <div className="px-2 py-1 bg-primary-500/20 border border-primary-500/30 rounded-full">
-                  <span className="text-primary-400 text-xs font-medium capitalize">{project.category.replace('_', ' ')}</span>
+                  <span className="text-primary-400 text-xs font-medium capitalize">
+                    {project.category.replace("_", " ")}
+                  </span>
                 </div>
               </div>
 
@@ -375,12 +398,14 @@ export default function ProjectDetailPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                    isLiked 
-                      ? 'bg-red-500/20 border-2 border-red-500/30 text-red-400' 
-                      : 'border-2 border-white/20 text-white hover:bg-white/10'
+                    isLiked
+                      ? "bg-red-500/20 border-2 border-red-500/30 text-red-400"
+                      : "border-2 border-white/20 text-white hover:bg-white/10"
                   }`}
                 >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                  <Heart
+                    className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`}
+                  />
                   <span>{project.stats.likes + (isLiked ? 1 : 0)}</span>
                 </motion.button>
 
@@ -425,7 +450,7 @@ export default function ProjectDetailPage() {
                   alt={`${project.title} - Image ${currentImageIndex + 1}`}
                   className="w-full h-96 object-cover"
                 />
-                
+
                 {/* Navigation Arrows */}
                 {project.media.gallery.length > 1 && (
                   <>
@@ -460,9 +485,9 @@ export default function ProjectDetailPage() {
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        index === currentImageIndex 
-                          ? 'border-primary-500' 
-                          : 'border-white/20 hover:border-white/40'
+                        index === currentImageIndex
+                          ? "border-primary-500"
+                          : "border-white/20 hover:border-white/40"
                       }`}
                     >
                       <img
@@ -506,10 +531,14 @@ export default function ProjectDetailPage() {
                 className="bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 p-4 text-center"
               >
                 <div className="text-2xl mb-2" style={{ color: tech.color }}>
-                  {tech.icon || '⚡'}
+                  {tech.icon || "⚡"}
                 </div>
-                <div className="text-white font-medium text-sm">{tech.name}</div>
-                <div className="text-gray-400 text-xs capitalize">{tech.category}</div>
+                <div className="text-white font-medium text-sm">
+                  {tech.name}
+                </div>
+                <div className="text-gray-400 text-xs capitalize">
+                  {tech.category}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -525,9 +554,11 @@ export default function ProjectDetailPage() {
             transition={{ duration: 0.8 }}
             className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8"
           >
-            <h2 className="text-2xl font-bold mb-6 text-white">Sobre o Projeto</h2>
+            <h2 className="text-2xl font-bold mb-6 text-white">
+              Sobre o Projeto
+            </h2>
             <div className="text-gray-300 leading-relaxed space-y-4">
-              {project.fullDescription.split('\n\n').map((paragraph, index) => (
+              {project.fullDescription.split("\n\n").map((paragraph, index) => (
                 <p key={index}>{paragraph.trim()}</p>
               ))}
             </div>
@@ -560,9 +591,15 @@ export default function ProjectDetailPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="bg-gradient-to-br from-primary-500/10 to-secondary-500/10 backdrop-blur-xl rounded-2xl border border-white/10 p-6 text-center"
               >
-                <div className="text-3xl font-bold text-primary-400 mb-2">{result.value}</div>
-                <div className="text-white font-semibold mb-1">{result.metric}</div>
-                <div className="text-gray-400 text-sm">{result.description}</div>
+                <div className="text-3xl font-bold text-primary-400 mb-2">
+                  {result.value}
+                </div>
+                <div className="text-white font-semibold mb-1">
+                  {result.metric}
+                </div>
+                <div className="text-gray-400 text-sm">
+                  {result.description}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -601,7 +638,9 @@ export default function ProjectDetailPage() {
                       alt={member.name}
                       className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-primary-500/30"
                     />
-                    <h3 className="text-white font-semibold mb-1">{member.name}</h3>
+                    <h3 className="text-white font-semibold mb-1">
+                      {member.name}
+                    </h3>
                     <p className="text-gray-400 text-sm">{member.role}</p>
                   </motion.div>
                 ))}
@@ -653,7 +692,7 @@ export default function ProjectDetailPage() {
                         {relatedProject.title}
                       </h3>
                       <p className="text-gray-400 text-sm capitalize">
-                        {relatedProject.category.replace('_', ' ')}
+                        {relatedProject.category.replace("_", " ")}
                       </p>
                     </div>
                   </Link>

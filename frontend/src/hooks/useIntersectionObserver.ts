@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
-export const useIntersectionObserver = (options: IntersectionObserverInit = {}) => {
+export const useIntersectionObserver = (
+  options: IntersectionObserverInit = {},
+) => {
   const [isInView, setIsInView] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -16,7 +18,7 @@ export const useIntersectionObserver = (options: IntersectionObserverInit = {}) 
           setHasTriggered(true);
         }
       },
-      { threshold: 0.3, ...options }
+      { threshold: 0.3, ...options },
     );
 
     observer.observe(element);

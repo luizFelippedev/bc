@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'user' | 'visitor';
+  role: "admin" | "user" | "visitor";
   avatar?: string;
   bio?: string;
   createdAt: Date;
@@ -27,8 +27,16 @@ export interface Technology {
   name: string;
   icon: React.ReactNode | string;
   color: string;
-  category: 'frontend' | 'backend' | 'database' | 'devops' | 'mobile' | 'design' | 'ai' | 'blockchain';
-  level: 'primary' | 'secondary' | 'learning';
+  category:
+    | "frontend"
+    | "backend"
+    | "database"
+    | "devops"
+    | "mobile"
+    | "design"
+    | "ai"
+    | "blockchain";
+  level: "primary" | "secondary" | "learning";
 }
 
 export interface Project {
@@ -42,14 +50,26 @@ export interface Project {
   solutions: string[];
   results: {
     metrics: Array<{ name: string; value: string; improvement?: string }>;
-    testimonials: Array<{ author: string; role: string; content: string; rating: number }>;
+    testimonials: Array<{
+      author: string;
+      role: string;
+      content: string;
+      rating: number;
+    }>;
   };
   technologies: Technology[];
   media: {
     featuredImage: string;
     gallery: string[];
-    videos: Array<{ url: string; type: 'demo' | 'presentation' | 'code_review' }>;
-    screenshots: Array<{ url: string; description: string; device: 'desktop' | 'tablet' | 'mobile' }>;
+    videos: Array<{
+      url: string;
+      type: "demo" | "presentation" | "code_review";
+    }>;
+    screenshots: Array<{
+      url: string;
+      description: string;
+      device: "desktop" | "tablet" | "mobile";
+    }>;
   };
   links: {
     live?: string;
@@ -58,9 +78,23 @@ export interface Project {
     caseStudy?: string;
     api?: string;
   };
-  category: 'web_app' | 'mobile_app' | 'desktop_app' | 'ai_ml' | 'blockchain' | 'iot' | 'game' | 'api';
-  status: 'concept' | 'development' | 'testing' | 'deployed' | 'maintenance' | 'archived';
-  visibility: 'public' | 'private' | 'client_only';
+  category:
+    | "web_app"
+    | "mobile_app"
+    | "desktop_app"
+    | "ai_ml"
+    | "blockchain"
+    | "iot"
+    | "game"
+    | "api";
+  status:
+    | "concept"
+    | "development"
+    | "testing"
+    | "deployed"
+    | "maintenance"
+    | "archived";
+  visibility: "public" | "private" | "client_only";
   featured: boolean;
   priority: number;
   timeline: {
@@ -70,7 +104,7 @@ export interface Project {
       title: string;
       description: string;
       date: Date;
-      status: 'pending' | 'in_progress' | 'completed';
+      status: "pending" | "in_progress" | "completed";
     }>;
   };
   team: Array<{
@@ -127,12 +161,12 @@ export interface Certificate {
     expires?: Date;
     renewed?: Date;
   };
-  level: 'foundational' | 'associate' | 'professional' | 'expert' | 'master';
-  type: 'technical' | 'business' | 'language' | 'academic' | 'professional';
+  level: "foundational" | "associate" | "professional" | "expert" | "master";
+  type: "technical" | "business" | "language" | "academic" | "professional";
   skills: Array<{
     name: string;
     category: string;
-    proficiencyLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+    proficiencyLevel: "beginner" | "intermediate" | "advanced" | "expert";
   }>;
   media: {
     certificate: string;
@@ -142,7 +176,7 @@ export interface Certificate {
   verification: {
     verified: boolean;
     verifiedAt?: Date;
-    verificationMethod: 'manual' | 'api' | 'blockchain';
+    verificationMethod: "manual" | "api" | "blockchain";
     notes?: string;
   };
   metadata: {
@@ -232,7 +266,7 @@ export interface ThemeConfig {
 }
 
 export interface ThemeState {
-  mode: 'light' | 'dark' | 'cyberpunk' | 'neon' | 'matrix';
+  mode: "light" | "dark" | "cyberpunk" | "neon" | "matrix";
   customColors: ThemeConfig;
   animations: boolean;
   particles: boolean;
@@ -254,7 +288,15 @@ export interface DataContextState {
 
 // Event types for analytics
 export interface AnalyticsEvent {
-  type: 'page_view' | 'project_view' | 'certificate_view' | 'contact_form' | 'download' | 'socket_connection' | 'socket_disconnection' | 'user_activity';
+  type:
+    | "page_view"
+    | "project_view"
+    | "certificate_view"
+    | "contact_form"
+    | "download"
+    | "socket_connection"
+    | "socket_disconnection"
+    | "user_activity";
   userId?: string;
   sessionId: string;
   data: Record<string, any>;
@@ -266,13 +308,13 @@ export interface AnalyticsEvent {
 // Notification types
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   title: string;
   message: string;
   data?: any;
   recipients: string[];
-  channels: ('socket' | 'email' | 'push')[];
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  channels: ("socket" | "email" | "push")[];
+  priority: "low" | "normal" | "high" | "urgent";
   createdAt: Date;
   scheduledFor?: Date;
   expiresAt?: Date;
@@ -293,7 +335,7 @@ export interface UploadResult {
 // Search types
 export interface SearchResult {
   id: string;
-  type: 'project' | 'certificate';
+  type: "project" | "certificate";
   title: string;
   description: string;
   score: number;
@@ -326,22 +368,24 @@ export interface BaseComponentProps {
 }
 
 export interface LoadingProps extends BaseComponentProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  type?: 'spinner' | 'dots' | 'pulse' | 'bars' | 'wave';
-  color?: 'primary' | 'secondary' | 'white' | 'gray';
+  size?: "sm" | "md" | "lg" | "xl";
+  type?: "spinner" | "dots" | "pulse" | "bars" | "wave";
+  color?: "primary" | "secondary" | "white" | "gray";
   text?: string;
   fullScreen?: boolean;
 }
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   leftIcon?: React.ReactNode;
@@ -386,7 +430,7 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredBy<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 // API Utility types
-export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 export interface ApiRequestConfig {
   method: ApiMethod;
@@ -399,7 +443,15 @@ export interface ApiRequestConfig {
 // Form types
 export interface FormField {
   name: string;
-  type: 'text' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file';
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "textarea"
+    | "select"
+    | "checkbox"
+    | "radio"
+    | "file";
   label: string;
   placeholder?: string;
   required?: boolean;
@@ -421,7 +473,10 @@ declare global {
     gtag: (...args: any[]) => void;
     dataLayer: any[];
     fs?: {
-      readFile: (path: string, options?: { encoding?: string }) => Promise<Uint8Array | string>;
+      readFile: (
+        path: string,
+        options?: { encoding?: string },
+      ) => Promise<Uint8Array | string>;
     };
     // PWA related
     deferredPrompt?: any;
@@ -449,23 +504,23 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       // Base environment
-      NODE_ENV: 'development' | 'production' | 'test';
-      
+      NODE_ENV: "development" | "production" | "test";
+
       // Application URLs
       NEXT_PUBLIC_APP_URL: string;
       NEXT_PUBLIC_API_URL: string;
-      
+
       // Database
       DATABASE_URL: string;
       MONGODB_URI: string;
       REDIS_URL: string;
-      
+
       // Authentication
       JWT_SECRET: string;
       JWT_EXPIRES_IN: string;
       REFRESH_TOKEN_SECRET: string;
       REFRESH_TOKEN_EXPIRES_IN: string;
-      
+
       // File Storage
       CLOUDINARY_CLOUD_NAME: string;
       CLOUDINARY_API_KEY: string;
@@ -474,11 +529,11 @@ declare global {
       AWS_SECRET_ACCESS_KEY: string;
       AWS_REGION: string;
       AWS_S3_BUCKET: string;
-      
+
       // Analytics
       NEXT_PUBLIC_GA_TRACKING_ID: string;
       GOOGLE_ANALYTICS_ID: string;
-      
+
       // Email Services
       EMAIL_HOST: string;
       EMAIL_PORT: string;
@@ -486,7 +541,7 @@ declare global {
       EMAIL_PASS: string;
       SENDGRID_API_KEY: string;
       RESEND_API_KEY: string;
-      
+
       // Social Auth
       GOOGLE_CLIENT_ID: string;
       GOOGLE_CLIENT_SECRET: string;
@@ -494,45 +549,45 @@ declare global {
       GITHUB_CLIENT_SECRET: string;
       LINKEDIN_CLIENT_ID: string;
       LINKEDIN_CLIENT_SECRET: string;
-      
+
       // External APIs
       OPENAI_API_KEY: string;
       STRIPE_SECRET_KEY: string;
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: string;
-      
+
       // Monitoring & Logging
       SENTRY_DSN: string;
       NEXT_PUBLIC_SENTRY_DSN: string;
       LOGROCKET_APP_ID: string;
-      
+
       // Feature Flags
       FEATURE_ANALYTICS: string;
       FEATURE_PWA: string;
       FEATURE_DARK_MODE: string;
-      
+
       // Security
       ENCRYPTION_KEY: string;
       CORS_ORIGIN: string;
       RATE_LIMIT_MAX: string;
       RATE_LIMIT_WINDOW: string;
-      
+
       // Development
       NEXT_PUBLIC_DEBUG: string;
       DISABLE_SSL: string;
-      
+
       // Cache
       CACHE_TTL: string;
       REDIS_CACHE_PREFIX: string;
-      
+
       // Webhooks
       WEBHOOK_SECRET: string;
       GITHUB_WEBHOOK_SECRET: string;
-      
+
       // Deployment
       VERCEL_URL: string;
       VERCEL_ENV: string;
       RAILWAY_ENVIRONMENT: string;
-      
+
       // Custom
       PORTFOLIO_ADMIN_EMAIL: string;
       CONTACT_NOTIFICATION_EMAIL: string;
@@ -542,7 +597,7 @@ declare global {
 }
 
 // Socket.IO extension
-declare module 'socket.io-client' {
+declare module "socket.io-client" {
   interface Socket {
     userId?: string;
     userRole?: string;
@@ -551,14 +606,14 @@ declare module 'socket.io-client' {
 }
 
 // Framer Motion extensions
-declare module 'framer-motion' {
+declare module "framer-motion" {
   interface AnimationProps {
     layoutId?: string;
   }
 }
 
 // Next.js extensions
-declare module 'next/router' {
+declare module "next/router" {
   interface NextRouter {
     query: {
       [key: string]: string | string[] | undefined;
@@ -567,14 +622,14 @@ declare module 'next/router' {
 }
 
 // React extensions for custom props
-declare module 'react' {
+declare module "react" {
   interface HTMLAttributes<T> {
     css?: any; // For emotion/styled-components
   }
 }
 
 // Tailwind CSS IntelliSense
-declare module 'tailwindcss/lib/util/flattenColorPalette' {
+declare module "tailwindcss/lib/util/flattenColorPalette" {
   function flattenColorPalette(colors: any): any;
   export = flattenColorPalette;
 }
@@ -588,7 +643,7 @@ export type {
   ApiMethod,
   ApiRequestConfig,
   FormField,
-  FormConfig
+  FormConfig,
 };
 
 // Re-export commonly used React types
@@ -600,18 +655,18 @@ export type {
   PropsWithChildren,
   RefObject,
   MutableRefObject,
-  CSSProperties
-} from 'react';
+  CSSProperties,
+} from "react";
 
 export {};
 
 // Additional utility types for specific use cases
-export type ProjectStatus = Project['status'];
-export type ProjectCategory = Project['category'];
-export type CertificateLevel = Certificate['level'];
-export type CertificateType = Certificate['type'];
-export type ThemeMode = ThemeState['mode'];
-export type UserRole = User['role'];
+export type ProjectStatus = Project["status"];
+export type ProjectCategory = Project["category"];
+export type CertificateLevel = Certificate["level"];
+export type CertificateType = Certificate["type"];
+export type ThemeMode = ThemeState["mode"];
+export type UserRole = User["role"];
 
 // Branded types for better type safety
 export type ProjectId = string & { readonly brand: unique symbol };
@@ -620,37 +675,37 @@ export type CertificateId = string & { readonly brand: unique symbol };
 
 // Enum-like objects for better intellisense
 export const PROJECT_STATUSES = {
-  CONCEPT: 'concept',
-  DEVELOPMENT: 'development',
-  TESTING: 'testing',
-  DEPLOYED: 'deployed',
-  MAINTENANCE: 'maintenance',
-  ARCHIVED: 'archived'
+  CONCEPT: "concept",
+  DEVELOPMENT: "development",
+  TESTING: "testing",
+  DEPLOYED: "deployed",
+  MAINTENANCE: "maintenance",
+  ARCHIVED: "archived",
 } as const;
 
 export const PROJECT_CATEGORIES = {
-  WEB_APP: 'web_app',
-  MOBILE_APP: 'mobile_app',
-  DESKTOP_APP: 'desktop_app',
-  AI_ML: 'ai_ml',
-  BLOCKCHAIN: 'blockchain',
-  IOT: 'iot',
-  GAME: 'game',
-  API: 'api'
+  WEB_APP: "web_app",
+  MOBILE_APP: "mobile_app",
+  DESKTOP_APP: "desktop_app",
+  AI_ML: "ai_ml",
+  BLOCKCHAIN: "blockchain",
+  IOT: "iot",
+  GAME: "game",
+  API: "api",
 } as const;
 
 export const CERTIFICATE_LEVELS = {
-  FOUNDATIONAL: 'foundational',
-  ASSOCIATE: 'associate',
-  PROFESSIONAL: 'professional',
-  EXPERT: 'expert',
-  MASTER: 'master'
+  FOUNDATIONAL: "foundational",
+  ASSOCIATE: "associate",
+  PROFESSIONAL: "professional",
+  EXPERT: "expert",
+  MASTER: "master",
 } as const;
 
 export const THEME_MODES = {
-  LIGHT: 'light',
-  DARK: 'dark',
-  CYBERPUNK: 'cyberpunk',
-  NEON: 'neon',
-  MATRIX: 'matrix'
+  LIGHT: "light",
+  DARK: "dark",
+  CYBERPUNK: "cyberpunk",
+  NEON: "neon",
+  MATRIX: "matrix",
 } as const;

@@ -1,38 +1,38 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 
 interface LoadingProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  type?: 'spinner' | 'dots' | 'pulse' | 'bars' | 'wave';
-  color?: 'primary' | 'secondary' | 'white' | 'gray';
+  size?: "sm" | "md" | "lg" | "xl";
+  type?: "spinner" | "dots" | "pulse" | "bars" | "wave";
+  color?: "primary" | "secondary" | "white" | "gray";
   text?: string;
   fullScreen?: boolean;
 }
 
 export const Loading: React.FC<LoadingProps> = ({
-  size = 'md',
-  type = 'spinner',
-  color = 'primary',
+  size = "md",
+  type = "spinner",
+  color = "primary",
   text,
-  fullScreen = false
+  fullScreen = false,
 }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
-    xl: 'w-16 h-16'
+    sm: "w-4 h-4",
+    md: "w-8 h-8",
+    lg: "w-12 h-12",
+    xl: "w-16 h-16",
   };
 
   const colorClasses = {
-    primary: 'text-primary-500',
-    secondary: 'text-secondary-500',
-    white: 'text-white',
-    gray: 'text-gray-400'
+    primary: "text-primary-500",
+    secondary: "text-secondary-500",
+    white: "text-white",
+    gray: "text-gray-400",
   };
 
   const containerClass = fullScreen
-    ? 'fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50'
-    : 'flex items-center justify-center';
+    ? "fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50"
+    : "flex items-center justify-center";
 
   const renderSpinner = () => (
     <div className={`${sizeClasses[size]} ${colorClasses[color]} animate-spin`}>
@@ -62,12 +62,12 @@ export const Loading: React.FC<LoadingProps> = ({
           className={`w-2 h-2 ${colorClasses[color]} bg-current rounded-full`}
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5]
+            opacity: [0.5, 1, 0.5],
           }}
           transition={{
             duration: 0.8,
             repeat: Infinity,
-            delay: i * 0.2
+            delay: i * 0.2,
           }}
         />
       ))}
@@ -79,11 +79,11 @@ export const Loading: React.FC<LoadingProps> = ({
       className={`${sizeClasses[size]} ${colorClasses[color]} bg-current rounded-full`}
       animate={{
         scale: [1, 1.2, 1],
-        opacity: [0.5, 1, 0.5]
+        opacity: [0.5, 1, 0.5],
       }}
       transition={{
         duration: 1.5,
-        repeat: Infinity
+        repeat: Infinity,
       }}
     />
   );
@@ -95,12 +95,12 @@ export const Loading: React.FC<LoadingProps> = ({
           key={i}
           className={`w-1 ${colorClasses[color]} bg-current rounded-full`}
           animate={{
-            height: [8, 24, 8]
+            height: [8, 24, 8],
           }}
           transition={{
             duration: 1,
             repeat: Infinity,
-            delay: i * 0.1
+            delay: i * 0.1,
           }}
         />
       ))}
@@ -114,12 +114,12 @@ export const Loading: React.FC<LoadingProps> = ({
           key={i}
           className={`w-2 h-2 ${colorClasses[color]} bg-current rounded-full`}
           animate={{
-            y: [0, -10, 0]
+            y: [0, -10, 0],
           }}
           transition={{
             duration: 0.8,
             repeat: Infinity,
-            delay: i * 0.1
+            delay: i * 0.1,
           }}
         />
       ))}
@@ -128,13 +128,13 @@ export const Loading: React.FC<LoadingProps> = ({
 
   const renderLoader = () => {
     switch (type) {
-      case 'dots':
+      case "dots":
         return renderDots();
-      case 'pulse':
+      case "pulse":
         return renderPulse();
-      case 'bars':
+      case "bars":
         return renderBars();
-      case 'wave':
+      case "wave":
         return renderWave();
       default:
         return renderSpinner();
@@ -165,7 +165,10 @@ interface SkeletonProps {
   children?: React.ReactNode;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ className = '', children }) => (
+export const Skeleton: React.FC<SkeletonProps> = ({
+  className = "",
+  children,
+}) => (
   <div className={`animate-pulse bg-gray-700/30 rounded ${className}`}>
     {children}
   </div>
@@ -207,7 +210,9 @@ export const ProjectSkeleton: React.FC = () => (
 );
 
 // Page Loading
-export const PageLoading: React.FC<{ text?: string }> = ({ text = 'Carregando...' }) => (
+export const PageLoading: React.FC<{ text?: string }> = ({
+  text = "Carregando...",
+}) => (
   <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 pt-20 flex items-center justify-center">
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -216,7 +221,7 @@ export const PageLoading: React.FC<{ text?: string }> = ({ text = 'Carregando...
     >
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
         className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center"
       >
         <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -241,9 +246,9 @@ interface LoadingButtonProps {
 export const LoadingButton: React.FC<LoadingButtonProps> = ({
   isLoading,
   children,
-  className = '',
+  className = "",
   onClick,
-  disabled
+  disabled,
 }) => (
   <motion.button
     whileHover={{ scale: isLoading ? 1 : 1.02 }}
@@ -251,7 +256,7 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
     onClick={onClick}
     disabled={disabled || isLoading}
     className={`relative flex items-center justify-center ${className} ${
-      isLoading || disabled ? 'cursor-not-allowed opacity-70' : ''
+      isLoading || disabled ? "cursor-not-allowed opacity-70" : ""
     }`}
   >
     {isLoading && (
@@ -259,8 +264,6 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
         <Loading size="sm" color="white" />
       </div>
     )}
-    <span className={isLoading ? 'invisible' : 'visible'}>
-      {children}
-    </span>
+    <span className={isLoading ? "invisible" : "visible"}>{children}</span>
   </motion.button>
 );

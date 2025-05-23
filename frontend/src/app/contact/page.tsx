@@ -1,11 +1,23 @@
-'use client';
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Mail, Phone, MapPin, Send, Clock, MessageCircle,
-  Github, Linkedin, Twitter, Globe, CheckCircle,
-  Calendar, Coffee, Zap, Heart
-} from 'lucide-react';
+"use client";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  Clock,
+  MessageCircle,
+  Github,
+  Linkedin,
+  Twitter,
+  Globe,
+  CheckCircle,
+  Calendar,
+  Coffee,
+  Zap,
+  Heart,
+} from "lucide-react";
 
 interface ContactForm {
   name: string;
@@ -19,13 +31,13 @@ interface ContactForm {
 
 export default function ContactPage() {
   const [formData, setFormData] = useState<ContactForm>({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-    budget: '',
-    timeline: '',
-    projectType: ''
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    budget: "",
+    timeline: "",
+    projectType: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -33,94 +45,98 @@ export default function ContactPage() {
   const contactInfo = [
     {
       icon: <Mail className="w-6 h-6" />,
-      title: 'Email',
-      value: 'joao@portfolio.com',
-      description: 'Respondo em até 24h',
-      action: 'mailto:joao@portfolio.com'
+      title: "Email",
+      value: "joao@portfolio.com",
+      description: "Respondo em até 24h",
+      action: "mailto:joao@portfolio.com",
     },
     {
       icon: <Phone className="w-6 h-6" />,
-      title: 'Telefone',
-      value: '+55 (11) 99999-9999',
-      description: 'WhatsApp disponível',
-      action: 'tel:+5511999999999'
+      title: "Telefone",
+      value: "+55 (11) 99999-9999",
+      description: "WhatsApp disponível",
+      action: "tel:+5511999999999",
     },
     {
       icon: <MapPin className="w-6 h-6" />,
-      title: 'Localização',
-      value: 'São Paulo, Brasil',
-      description: 'Trabalho remotamente',
-      action: null
+      title: "Localização",
+      value: "São Paulo, Brasil",
+      description: "Trabalho remotamente",
+      action: null,
     },
     {
       icon: <Clock className="w-6 h-6" />,
-      title: 'Disponibilidade',
-      value: 'Segunda a Sexta',
-      description: '9h às 18h (GMT-3)',
-      action: null
-    }
+      title: "Disponibilidade",
+      value: "Segunda a Sexta",
+      description: "9h às 18h (GMT-3)",
+      action: null,
+    },
   ];
 
   const socialLinks = [
     {
-      name: 'GitHub',
+      name: "GitHub",
       icon: <Github className="w-5 h-5" />,
-      url: 'https://github.com/joaosilva',
-      color: 'hover:text-gray-300'
+      url: "https://github.com/joaosilva",
+      color: "hover:text-gray-300",
     },
     {
-      name: 'LinkedIn',
+      name: "LinkedIn",
       icon: <Linkedin className="w-5 h-5" />,
-      url: 'https://linkedin.com/in/joaosilva',
-      color: 'hover:text-blue-400'
+      url: "https://linkedin.com/in/joaosilva",
+      color: "hover:text-blue-400",
     },
     {
-      name: 'Twitter',
+      name: "Twitter",
       icon: <Twitter className="w-5 h-5" />,
-      url: 'https://twitter.com/joaosilva',
-      color: 'hover:text-blue-400'
+      url: "https://twitter.com/joaosilva",
+      color: "hover:text-blue-400",
     },
     {
-      name: 'Website',
+      name: "Website",
       icon: <Globe className="w-5 h-5" />,
-      url: 'https://joaosilva.dev',
-      color: 'hover:text-primary-400'
-    }
+      url: "https://joaosilva.dev",
+      color: "hover:text-primary-400",
+    },
   ];
 
   const projectTypes = [
-    'Website/Landing Page',
-    'Aplicação Web',
-    'Aplicativo Mobile',
-    'E-commerce',
-    'Dashboard/Admin',
-    'API/Backend',
-    'Consultoria',
-    'Outro'
+    "Website/Landing Page",
+    "Aplicação Web",
+    "Aplicativo Mobile",
+    "E-commerce",
+    "Dashboard/Admin",
+    "API/Backend",
+    "Consultoria",
+    "Outro",
   ];
 
   const budgetRanges = [
-    'R$ 5.000 - R$ 15.000',
-    'R$ 15.000 - R$ 30.000',
-    'R$ 30.000 - R$ 50.000',
-    'R$ 50.000+',
-    'A definir'
+    "R$ 5.000 - R$ 15.000",
+    "R$ 15.000 - R$ 30.000",
+    "R$ 30.000 - R$ 50.000",
+    "R$ 50.000+",
+    "A definir",
   ];
 
   const timelineOptions = [
-    '1-2 semanas',
-    '1 mês',
-    '2-3 meses',
-    '3-6 meses',
-    '6+ meses',
-    'Flexível'
+    "1-2 semanas",
+    "1 mês",
+    "2-3 meses",
+    "3-6 meses",
+    "6+ meses",
+    "Flexível",
   ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -129,7 +145,7 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     // Simular envio do formulário
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     setIsSubmitting(false);
     setIsSubmitted(true);
@@ -138,13 +154,13 @@ export default function ContactPage() {
     setTimeout(() => {
       setIsSubmitted(false);
       setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        budget: '',
-        timeline: '',
-        projectType: ''
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        budget: "",
+        timeline: "",
+        projectType: "",
       });
     }, 3000);
   };
@@ -165,10 +181,10 @@ export default function ContactPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Tenho uma ideia? Precisa de ajuda com um projeto? Ou apenas quer bater um papo sobre tecnologia? 
-              Adoraria ouvir de você! 🚀
+              Tenho uma ideia? Precisa de ajuda com um projeto? Ou apenas quer
+              bater um papo sobre tecnologia? Adoraria ouvir de você! 🚀
             </p>
-            
+
             <div className="flex items-center justify-center space-x-6 text-gray-400">
               <div className="flex items-center space-x-2">
                 <Coffee className="w-5 h-5 text-primary-400" />
@@ -237,7 +253,9 @@ export default function ContactPage() {
                   <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Mensagem Enviada!</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Mensagem Enviada!
+                  </h3>
                   <p className="text-gray-400">
                     Obrigado pelo contato! Vou responder em breve.
                   </p>
@@ -288,9 +306,15 @@ export default function ContactPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
-                        <option value="" className="bg-gray-800">Selecione...</option>
-                        {projectTypes.map(type => (
-                          <option key={type} value={type} className="bg-gray-800">
+                        <option value="" className="bg-gray-800">
+                          Selecione...
+                        </option>
+                        {projectTypes.map((type) => (
+                          <option
+                            key={type}
+                            value={type}
+                            className="bg-gray-800"
+                          >
                             {type}
                           </option>
                         ))}
@@ -306,9 +330,15 @@ export default function ContactPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
-                        <option value="" className="bg-gray-800">Selecione...</option>
-                        {budgetRanges.map(range => (
-                          <option key={range} value={range} className="bg-gray-800">
+                        <option value="" className="bg-gray-800">
+                          Selecione...
+                        </option>
+                        {budgetRanges.map((range) => (
+                          <option
+                            key={range}
+                            value={range}
+                            className="bg-gray-800"
+                          >
                             {range}
                           </option>
                         ))}
@@ -324,9 +354,15 @@ export default function ContactPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
-                        <option value="" className="bg-gray-800">Selecione...</option>
-                        {timelineOptions.map(option => (
-                          <option key={option} value={option} className="bg-gray-800">
+                        <option value="" className="bg-gray-800">
+                          Selecione...
+                        </option>
+                        {timelineOptions.map((option) => (
+                          <option
+                            key={option}
+                            value={option}
+                            className="bg-gray-800"
+                          >
                             {option}
                           </option>
                         ))}
@@ -388,7 +424,8 @@ export default function ContactPage() {
                   </motion.button>
 
                   <p className="text-gray-400 text-sm text-center">
-                    Ao enviar, você concorda que posso usar essas informações para responder sua mensagem.
+                    Ao enviar, você concorda que posso usar essas informações
+                    para responder sua mensagem.
                   </p>
                 </form>
               )}
@@ -408,7 +445,8 @@ export default function ContactPage() {
                   Vamos nos Conectar
                 </h3>
                 <p className="text-gray-400 mb-6">
-                  Siga-me nas redes sociais para ver meus últimos projetos e insights sobre tecnologia.
+                  Siga-me nas redes sociais para ver meus últimos projetos e
+                  insights sobre tecnologia.
                 </p>
                 <div className="flex space-x-4">
                   {socialLinks.map((social, index) => (
@@ -437,8 +475,9 @@ export default function ContactPage() {
                       💼 Que tipo de projetos você aceita?
                     </h4>
                     <p className="text-gray-400 text-sm">
-                      Trabalho com desenvolvimento web, mobile, APIs e consultoria em tecnologia. 
-                      Especialmente interessado em projetos inovadores com IA.
+                      Trabalho com desenvolvimento web, mobile, APIs e
+                      consultoria em tecnologia. Especialmente interessado em
+                      projetos inovadores com IA.
                     </p>
                   </div>
                   <div>
@@ -446,8 +485,9 @@ export default function ContactPage() {
                       ⏱️ Qual o prazo típico dos projetos?
                     </h4>
                     <p className="text-gray-400 text-sm">
-                      Depende da complexidade. Projetos simples levam 2-4 semanas, 
-                      enquanto aplicações complexas podem levar 2-6 meses.
+                      Depende da complexidade. Projetos simples levam 2-4
+                      semanas, enquanto aplicações complexas podem levar 2-6
+                      meses.
                     </p>
                   </div>
                   <div>
@@ -455,8 +495,8 @@ export default function ContactPage() {
                       🌍 Você trabalha remotamente?
                     </h4>
                     <p className="text-gray-400 text-sm">
-                      Sim! Trabalho com clientes do mundo todo. Tenho experiência 
-                      com equipes distribuídas e metodologias ágeis.
+                      Sim! Trabalho com clientes do mundo todo. Tenho
+                      experiência com equipes distribuídas e metodologias ágeis.
                     </p>
                   </div>
                 </div>
@@ -472,8 +512,9 @@ export default function ContactPage() {
                   />
                   <div>
                     <p className="text-gray-300 italic mb-3">
-                      "Luiz Felippe entregou um trabalho excepcional. Comunicação clara, 
-                      código limpo e resultado final superou nossas expectativas!"
+                      "Luiz Felippe entregou um trabalho excepcional.
+                      Comunicação clara, código limpo e resultado final superou
+                      nossas expectativas!"
                     </p>
                     <div className="text-sm">
                       <div className="text-white font-medium">Ana Silva</div>
@@ -503,7 +544,8 @@ export default function ContactPage() {
               </h2>
             </div>
             <p className="text-gray-300 text-lg mb-8">
-              Cada grande projeto começa com uma conversa. Vamos transformar sua ideia em realidade!
+              Cada grande projeto começa com uma conversa. Vamos transformar sua
+              ideia em realidade!
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <motion.a
@@ -515,7 +557,7 @@ export default function ContactPage() {
                 <Mail className="w-5 h-5" />
                 <span>Enviar Email Direto</span>
               </motion.a>
-              
+
               <motion.a
                 href="#"
                 whileHover={{ scale: 1.05 }}

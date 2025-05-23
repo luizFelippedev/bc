@@ -1,21 +1,28 @@
 // API Services for communicating with the backend
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { ApiResponse, Project, Certificate, User, ContactForm, Analytics } from '@/types/globals';
-import { localStorage } from '@/utils';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import {
+  ApiResponse,
+  Project,
+  Certificate,
+  User,
+  ContactForm,
+  Analytics,
+} from "@/types/globals";
+import { localStorage } from "@/utils";
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.get<string>('portfolio_token');
+    const token = localStorage.get<string>("portfolio_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,7 +30,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -32,13 +39,13 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Unauthorized - remove token and redirect to login
-      localStorage.remove('portfolio_token');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      localStorage.remove("portfolio_token");
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Generic API request function
@@ -47,61 +54,68 @@ async function request<T>(config: AxiosRequestConfig): Promise<T> {
     const response = await api(config);
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || error.message || 'An error occurred');
+    throw new Error(
+      error.response?.data?.message || error.message || "An error occurred",
+    );
   }
 }
 
 // Auth Services
 export const authService = {
-  async login(email: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<{ user: User; token: string }>> {
     return request({
-      method: 'POST',
-      url: '/api/auth/login',
+      method: "POST",
+      url: "/api/auth/login",
       data: { email, password },
     });
   },
 
   async logout(): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/auth/logout',
+      method: "POST",
+      url: "/api/auth/logout",
     });
   },
 
-  async register(userData: Partial<User>): Promise<ApiResponse<{ user: User; token: string }>> {
+  async register(
+    userData: Partial<User>,
+  ): Promise<ApiResponse<{ user: User; token: string }>> {
     return request({
-      method: 'POST',
-      url: '/api/auth/register',
+      method: "POST",
+      url: "/api/auth/register",
       data: userData,
     });
   },
 
   async refreshToken(): Promise<ApiResponse<{ token: string }>> {
     return request({
-      method: 'POST',
-      url: '/api/auth/refresh',
+      method: "POST",
+      url: "/api/auth/refresh",
     });
   },
 
   async verifyToken(): Promise<ApiResponse<{ user: User }>> {
     return request({
-      method: 'GET',
-      url: '/api/auth/verify',
+      method: "GET",
+      url: "/api/auth/verify",
     });
   },
 
   async forgotPassword(email: string): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/auth/forgot-password',
+      method: "POST",
+      url: "/api/auth/forgot-password",
       data: { email },
     });
   },
 
   async resetPassword(token: string, password: string): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/auth/reset-password',
+      method: "POST",
+      url: "/api/auth/reset-password",
       data: { token, password },
     });
   },
@@ -117,69 +131,78 @@ export const projectsService = {
     featured?: boolean;
     search?: string;
     sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
+    sortOrder?: "asc" | "desc";
   }): Promise<ApiResponse<Project[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/projects',
+      method: "GET",
+      url: "/api/public/projects",
       params,
     });
   },
 
-  async getBySlug(slug: string): Promise<ApiResponse<{ project: Project; related: Project[] }>> {
+  async getBySlug(
+    slug: string,
+  ): Promise<ApiResponse<{ project: Project; related: Project[] }>> {
     return request({
-      method: 'GET',
+      method: "GET",
       url: `/api/public/projects/${slug}`,
     });
   },
 
   async getFeatured(): Promise<ApiResponse<Project[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/projects/featured',
+      method: "GET",
+      url: "/api/public/projects/featured",
     });
   },
 
   async getCategories(): Promise<ApiResponse<string[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/projects/categories',
+      method: "GET",
+      url: "/api/public/projects/categories",
     });
   },
 
   // Admin routes
   async create(projectData: FormData): Promise<ApiResponse<Project>> {
     return request({
-      method: 'POST',
-      url: '/api/admin/projects',
+      method: "POST",
+      url: "/api/admin/projects",
       data: projectData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
-  async update(id: string, projectData: FormData): Promise<ApiResponse<Project>> {
+  async update(
+    id: string,
+    projectData: FormData,
+  ): Promise<ApiResponse<Project>> {
     return request({
-      method: 'PUT',
+      method: "PUT",
       url: `/api/admin/projects/${id}`,
       data: projectData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
   async delete(id: string): Promise<ApiResponse> {
     return request({
-      method: 'DELETE',
+      method: "DELETE",
       url: `/api/admin/projects/${id}`,
     });
   },
 
-  async getAnalytics(id: string, startDate?: string, endDate?: string): Promise<ApiResponse<Analytics>> {
+  async getAnalytics(
+    id: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<ApiResponse<Analytics>> {
     return request({
-      method: 'GET',
+      method: "GET",
       url: `/api/admin/projects/${id}/analytics`,
       params: { startDate, endDate },
     });
@@ -196,48 +219,51 @@ export const certificatesService = {
     featured?: boolean;
     search?: string;
     sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
+    sortOrder?: "asc" | "desc";
   }): Promise<ApiResponse<Certificate[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/certificates',
+      method: "GET",
+      url: "/api/public/certificates",
       params,
     });
   },
 
   async getFeatured(): Promise<ApiResponse<Certificate[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/certificates/featured',
+      method: "GET",
+      url: "/api/public/certificates/featured",
     });
   },
 
   // Admin routes
   async create(certificateData: FormData): Promise<ApiResponse<Certificate>> {
     return request({
-      method: 'POST',
-      url: '/api/admin/certificates',
+      method: "POST",
+      url: "/api/admin/certificates",
       data: certificateData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
-  async update(id: string, certificateData: FormData): Promise<ApiResponse<Certificate>> {
+  async update(
+    id: string,
+    certificateData: FormData,
+  ): Promise<ApiResponse<Certificate>> {
     return request({
-      method: 'PUT',
+      method: "PUT",
       url: `/api/admin/certificates/${id}`,
       data: certificateData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
   async delete(id: string): Promise<ApiResponse> {
     return request({
-      method: 'DELETE',
+      method: "DELETE",
       url: `/api/admin/certificates/${id}`,
     });
   },
@@ -247,16 +273,16 @@ export const certificatesService = {
 export const contactService = {
   async submitForm(formData: ContactForm): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/public/contact',
+      method: "POST",
+      url: "/api/public/contact",
       data: formData,
     });
   },
 
   async subscribe(email: string): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/public/subscribe',
+      method: "POST",
+      url: "/api/public/subscribe",
       data: { email },
     });
   },
@@ -267,8 +293,8 @@ export const analyticsService = {
   async track(event: string, data?: any): Promise<void> {
     try {
       await request({
-        method: 'POST',
-        url: '/api/public/analytics/track',
+        method: "POST",
+        url: "/api/public/analytics/track",
         data: {
           event,
           data,
@@ -278,39 +304,42 @@ export const analyticsService = {
       });
     } catch (error) {
       // Silently fail for analytics
-      console.warn('Analytics tracking failed:', error);
+      console.warn("Analytics tracking failed:", error);
     }
   },
 
   async getPublicStats(): Promise<ApiResponse<Analytics>> {
     return request({
-      method: 'GET',
-      url: '/api/public/analytics/stats',
+      method: "GET",
+      url: "/api/public/analytics/stats",
     });
   },
 
   // Admin routes
-  async getMetrics(startDate?: string, endDate?: string): Promise<ApiResponse<Analytics>> {
+  async getMetrics(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<ApiResponse<Analytics>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/analytics/metrics',
+      method: "GET",
+      url: "/api/admin/analytics/metrics",
       params: { startDate, endDate },
     });
   },
 
   async getRealTime(): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/analytics/realtime',
+      method: "GET",
+      url: "/api/admin/analytics/realtime",
     });
   },
 
-  async exportData(format: 'csv' | 'json' = 'csv'): Promise<Blob> {
+  async exportData(format: "csv" | "json" = "csv"): Promise<Blob> {
     const response = await api({
-      method: 'GET',
-      url: '/api/admin/analytics/export',
+      method: "GET",
+      url: "/api/admin/analytics/export",
       params: { format },
-      responseType: 'blob',
+      responseType: "blob",
     });
     return response.data;
   },
@@ -320,15 +349,15 @@ export const analyticsService = {
 export const adminService = {
   async getDashboard(): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/dashboard',
+      method: "GET",
+      url: "/api/admin/dashboard",
     });
   },
 
   async getSystemMetrics(): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/system/metrics',
+      method: "GET",
+      url: "/api/admin/system/metrics",
     });
   },
 
@@ -340,15 +369,18 @@ export const adminService = {
     status?: string;
   }): Promise<ApiResponse<User[]>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/users',
+      method: "GET",
+      url: "/api/admin/users",
       params,
     });
   },
 
-  async updateUserRole(userId: string, role: string): Promise<ApiResponse<User>> {
+  async updateUserRole(
+    userId: string,
+    role: string,
+  ): Promise<ApiResponse<User>> {
     return request({
-      method: 'PUT',
+      method: "PUT",
       url: `/api/admin/users/${userId}/role`,
       data: { role },
     });
@@ -364,38 +396,38 @@ export const adminService = {
     endDate?: string;
   }): Promise<ApiResponse<any[]>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/audit-logs',
+      method: "GET",
+      url: "/api/admin/audit-logs",
       params,
     });
   },
 
   async createBackup(): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/admin/backup',
+      method: "POST",
+      url: "/api/admin/backup",
     });
   },
 
   async clearCache(pattern?: string): Promise<ApiResponse> {
     return request({
-      method: 'POST',
-      url: '/api/admin/cache/clear',
+      method: "POST",
+      url: "/api/admin/cache/clear",
       data: { pattern },
     });
   },
 
   async getSystemConfig(): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/admin/system/config',
+      method: "GET",
+      url: "/api/admin/system/config",
     });
   },
 
   async updateSystemConfig(settings: any): Promise<ApiResponse> {
     return request({
-      method: 'PUT',
-      url: '/api/admin/system/config',
+      method: "PUT",
+      url: "/api/admin/system/config",
       data: { settings },
     });
   },
@@ -403,10 +435,14 @@ export const adminService = {
 
 // Search Services
 export const searchService = {
-  async search(query: string, type?: 'projects' | 'certificates' | 'all', category?: string): Promise<ApiResponse<any>> {
+  async search(
+    query: string,
+    type?: "projects" | "certificates" | "all",
+    category?: string,
+  ): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/public/search',
+      method: "GET",
+      url: "/api/public/search",
       params: { q: query, type, category },
     });
   },
@@ -414,46 +450,52 @@ export const searchService = {
 
 // File Upload Services
 export const uploadService = {
-  async uploadFile(file: File, folder?: string): Promise<ApiResponse<{ url: string; filename: string }>> {
+  async uploadFile(
+    file: File,
+    folder?: string,
+  ): Promise<ApiResponse<{ url: string; filename: string }>> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
     if (folder) {
-      formData.append('folder', folder);
+      formData.append("folder", folder);
     }
 
     return request({
-      method: 'POST',
-      url: '/api/upload/single',
+      method: "POST",
+      url: "/api/upload/single",
       data: formData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
-  async uploadMultiple(files: File[], folder?: string): Promise<ApiResponse<Array<{ url: string; filename: string }>>> {
+  async uploadMultiple(
+    files: File[],
+    folder?: string,
+  ): Promise<ApiResponse<Array<{ url: string; filename: string }>>> {
     const formData = new FormData();
-    files.forEach(file => {
-      formData.append('files', file);
+    files.forEach((file) => {
+      formData.append("files", file);
     });
     if (folder) {
-      formData.append('folder', folder);
+      formData.append("folder", folder);
     }
 
     return request({
-      method: 'POST',
-      url: '/api/upload/multiple',
+      method: "POST",
+      url: "/api/upload/multiple",
       data: formData,
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },
 
   async deleteFile(url: string): Promise<ApiResponse> {
     return request({
-      method: 'DELETE',
-      url: '/api/upload/delete',
+      method: "DELETE",
+      url: "/api/upload/delete",
       data: { url },
     });
   },
@@ -463,15 +505,15 @@ export const uploadService = {
 export const skillsService = {
   async getAll(): Promise<ApiResponse<any[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/skills',
+      method: "GET",
+      url: "/api/public/skills",
     });
   },
 
   async getCategories(): Promise<ApiResponse<any[]>> {
     return request({
-      method: 'GET',
-      url: '/api/public/skills/categories',
+      method: "GET",
+      url: "/api/public/skills/categories",
     });
   },
 };
@@ -480,18 +522,19 @@ export const skillsService = {
 export const aboutService = {
   async getData(): Promise<ApiResponse<any>> {
     return request({
-      method: 'GET',
-      url: '/api/public/about',
+      method: "GET",
+      url: "/api/public/about",
     });
   },
 };
 
 // Utility functions
 function getSessionId(): string {
-  let sessionId = localStorage.get<string>('session_id');
+  let sessionId = localStorage.get<string>("session_id");
   if (!sessionId) {
-    sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-    localStorage.set('session_id', sessionId);
+    sessionId =
+      "session_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now();
+    localStorage.set("session_id", sessionId);
   }
   return sessionId;
 }
@@ -503,8 +546,8 @@ export { api };
 export const healthService = {
   async check(): Promise<ApiResponse> {
     return request({
-      method: 'GET',
-      url: '/health',
+      method: "GET",
+      url: "/health",
     });
   },
 };
@@ -513,18 +556,18 @@ export const healthService = {
 export const contentService = {
   async getRSS(): Promise<string> {
     const response = await api({
-      method: 'GET',
-      url: '/api/public/rss',
-      responseType: 'text',
+      method: "GET",
+      url: "/api/public/rss",
+      responseType: "text",
     });
     return response.data;
   },
 
   async getSitemap(): Promise<string> {
     const response = await api({
-      method: 'GET',
-      url: '/api/public/sitemap.xml',
-      responseType: 'text',
+      method: "GET",
+      url: "/api/public/sitemap.xml",
+      responseType: "text",
     });
     return response.data;
   },

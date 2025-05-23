@@ -1,6 +1,10 @@
-'use client';
-import React, { useState } from 'react';
-import { placeholders, generateSVGDataUrl, PlaceholderType } from '@/utils/placeholder';
+"use client";
+import React, { useState } from "react";
+import {
+  placeholders,
+  generateSVGDataUrl,
+  PlaceholderType,
+} from "@/utils/placeholder";
 
 interface SmartImageProps {
   src?: string;
@@ -10,7 +14,7 @@ interface SmartImageProps {
   className?: string;
   placeholderType?: PlaceholderType;
   placeholderText?: string;
-  loading?: 'lazy' | 'eager';
+  loading?: "lazy" | "eager";
   onLoad?: () => void;
   onError?: () => void;
 }
@@ -20,12 +24,12 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   alt,
   width,
   height,
-  className = '',
-  placeholderType = 'general',
+  className = "",
+  placeholderType = "general",
   placeholderText,
-  loading = 'lazy',
+  loading = "lazy",
   onLoad,
-  onError
+  onError,
 }) => {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
@@ -34,11 +38,14 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   // Gera placeholder baseado no tipo
   const getPlaceholderSrc = () => {
     switch (placeholderType) {
-      case 'profile':
-        return placeholders.userAvatar(placeholderText || 'User', Math.max(width, height));
-      case 'project':
+      case "profile":
+        return placeholders.userAvatar(
+          placeholderText || "User",
+          Math.max(width, height),
+        );
+      case "project":
         return placeholders.projectImage(width, height);
-      case 'certificate':
+      case "certificate":
         return placeholders.certificateImage(width, height, placeholderText);
       default:
         return placeholders.general(width, height);
@@ -48,18 +55,20 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   const handleError = () => {
     setHasError(true);
     setIsLoading(false);
-    
+
     if (currentSrc !== getPlaceholderSrc()) {
       setCurrentSrc(getPlaceholderSrc());
     } else {
       // Se até o placeholder falhar, usa SVG data URL
-      setCurrentSrc(generateSVGDataUrl({ 
-        width, 
-        height, 
-        text: placeholderText || `${width}×${height}` 
-      }));
+      setCurrentSrc(
+        generateSVGDataUrl({
+          width,
+          height,
+          text: placeholderText || `${width}×${height}`,
+        }),
+      );
     }
-    
+
     onError?.();
   };
 
@@ -69,32 +78,41 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   };
 
   return (
-    <div className={`relative overflow-hidden ${className}`} style={{ width, height }}>
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{ width, height }}
+    >
       {/* Loading placeholder */}
       {isLoading && (
-        <div 
+        <div
           className="absolute inset-0 bg-gray-200 animate-pulse"
           style={{
-            backgroundImage: `url("${generateSVGDataUrl({ width, height, text: '...' })}")`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundImage: `url("${generateSVGDataUrl({
+              width,
+              height,
+              text: "...",
+            })}")`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         />
       )}
-      
+
       {/* Main image */}
       <img
         src={currentSrc || getPlaceholderSrc()}
         alt={alt}
         width={width}
         height={height}
-        className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-        style={{ width, height, objectFit: 'cover' }}
+        className={`transition-opacity duration-300 ${
+          isLoading ? "opacity-0" : "opacity-100"
+        }`}
+        style={{ width, height, objectFit: "cover" }}
         loading={loading}
         onLoad={handleLoad}
         onError={handleError}
       />
-      
+
       {/* Error indicator */}
       {hasError && (
         <div className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full opacity-50" />
@@ -109,7 +127,7 @@ export const AvatarImage: React.FC<{
   name?: string;
   size?: number;
   className?: string;
-}> = ({ src, name = 'User', size = 40, className = '' }) => {
+}> = ({ src, name = "User", size = 40, className = "" }) => {
   return (
     <SmartImage
       src={src}
@@ -130,7 +148,13 @@ export const ProjectImage: React.FC<{
   width?: number;
   height?: number;
   className?: string;
-}> = ({ src, title = 'Projeto', width = 400, height = 300, className = '' }) => {
+}> = ({
+  src,
+  title = "Projeto",
+  width = 400,
+  height = 300,
+  className = "",
+}) => {
   return (
     <SmartImage
       src={src}
@@ -151,7 +175,13 @@ export const CertificateImage: React.FC<{
   width?: number;
   height?: number;
   className?: string;
-}> = ({ src, title = 'Certificado', width = 300, height = 200, className = '' }) => {
+}> = ({
+  src,
+  title = "Certificado",
+  width = 300,
+  height = 200,
+  className = "",
+}) => {
   return (
     <SmartImage
       src={src}

@@ -1,8 +1,8 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Script from 'next/script';
-import { motion, AnimatePresence } from 'framer-motion';
+"use client";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import Script from "next/script";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Google Analytics
 const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
@@ -12,8 +12,8 @@ export function useAnalytics() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (GA_TRACKING_ID && typeof window !== 'undefined' && window.gtag) {
-      window.gtag('config', GA_TRACKING_ID, {
+    if (GA_TRACKING_ID && typeof window !== "undefined" && window.gtag) {
+      window.gtag("config", GA_TRACKING_ID, {
         page_path: pathname,
       });
     }
@@ -23,10 +23,10 @@ export function useAnalytics() {
     action: string,
     category: string,
     label?: string,
-    value?: number
+    value?: number,
   ) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', action, {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", action, {
         event_category: category,
         event_label: label,
         value: value,
@@ -34,12 +34,12 @@ export function useAnalytics() {
     }
 
     // Custom analytics
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Send to your custom analytics API
-      fetch('/api/analytics/track', {
-        method: 'POST',
+      fetch("/api/analytics/track", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           action,
@@ -57,35 +57,38 @@ export function useAnalytics() {
   };
 
   const trackPageView = (path: string) => {
-    if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID) {
-      window.gtag('config', GA_TRACKING_ID, {
+    if (typeof window !== "undefined" && window.gtag && GA_TRACKING_ID) {
+      window.gtag("config", GA_TRACKING_ID, {
         page_path: path,
       });
     }
   };
 
   const trackProjectView = (projectId: string, projectTitle: string) => {
-    trackEvent('view_project', 'engagement', projectTitle);
+    trackEvent("view_project", "engagement", projectTitle);
   };
 
-  const trackCertificateView = (certificateId: string, certificateTitle: string) => {
-    trackEvent('view_certificate', 'engagement', certificateTitle);
+  const trackCertificateView = (
+    certificateId: string,
+    certificateTitle: string,
+  ) => {
+    trackEvent("view_certificate", "engagement", certificateTitle);
   };
 
   const trackContactForm = (formType: string) => {
-    trackEvent('submit_form', 'conversion', formType);
+    trackEvent("submit_form", "conversion", formType);
   };
 
   const trackDownload = (fileName: string, fileType: string) => {
-    trackEvent('download', 'engagement', fileName, 1);
+    trackEvent("download", "engagement", fileName, 1);
   };
 
   const trackExternalLink = (url: string, linkText: string) => {
-    trackEvent('click_external_link', 'engagement', url);
+    trackEvent("click_external_link", "engagement", url);
   };
 
   const trackSearch = (query: string, resultsCount: number) => {
-    trackEvent('search', 'engagement', query, resultsCount);
+    trackEvent("search", "engagement", query, resultsCount);
   };
 
   return {
@@ -146,7 +149,7 @@ function CookieConsent() {
   });
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookie-consent');
+    const consent = localStorage.getItem("cookie-consent");
     if (!consent) {
       setShowBanner(true);
     } else {
@@ -162,14 +165,14 @@ function CookieConsent() {
       marketing: true,
     };
     setPreferences(newPreferences);
-    localStorage.setItem('cookie-consent', JSON.stringify(newPreferences));
+    localStorage.setItem("cookie-consent", JSON.stringify(newPreferences));
     setShowBanner(false);
-    
+
     // Initialize analytics
-    if (GA_TRACKING_ID && typeof window !== 'undefined' && window.gtag) {
-      window.gtag('consent', 'update', {
-        analytics_storage: 'granted',
-        ad_storage: 'granted',
+    if (GA_TRACKING_ID && typeof window !== "undefined" && window.gtag) {
+      window.gtag("consent", "update", {
+        analytics_storage: "granted",
+        ad_storage: "granted",
       });
     }
   };
@@ -181,7 +184,7 @@ function CookieConsent() {
       marketing: false,
     };
     setPreferences(newPreferences);
-    localStorage.setItem('cookie-consent', JSON.stringify(newPreferences));
+    localStorage.setItem("cookie-consent", JSON.stringify(newPreferences));
     setShowBanner(false);
   };
 
@@ -190,15 +193,15 @@ function CookieConsent() {
   };
 
   const savePreferences = () => {
-    localStorage.setItem('cookie-consent', JSON.stringify(preferences));
+    localStorage.setItem("cookie-consent", JSON.stringify(preferences));
     setShowBanner(false);
     setShowPreferencesModal(false);
-    
+
     // Update analytics consent
-    if (GA_TRACKING_ID && typeof window !== 'undefined' && window.gtag) {
-      window.gtag('consent', 'update', {
-        analytics_storage: preferences.analytics ? 'granted' : 'denied',
-        ad_storage: preferences.marketing ? 'granted' : 'denied',
+    if (GA_TRACKING_ID && typeof window !== "undefined" && window.gtag) {
+      window.gtag("consent", "update", {
+        analytics_storage: preferences.analytics ? "granted" : "denied",
+        ad_storage: preferences.marketing ? "granted" : "denied",
       });
     }
   };
@@ -219,11 +222,12 @@ function CookieConsent() {
                 🍪 Este site utiliza cookies
               </h3>
               <p className="text-gray-300 text-sm">
-                Utilizamos cookies para melhorar sua experiência, analisar o tráfego do site 
-                e personalizar conteúdo. Você pode gerenciar suas preferências a qualquer momento.
+                Utilizamos cookies para melhorar sua experiência, analisar o
+                tráfego do site e personalizar conteúdo. Você pode gerenciar
+                suas preferências a qualquer momento.
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={acceptNecessary}
@@ -263,17 +267,19 @@ function CookieConsent() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="w-full max-w-md bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-6"
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-xl font-semibold text-white mb-4">
                 Preferências de Cookies
               </h3>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-white font-medium">Necessários</h4>
-                    <p className="text-gray-400 text-sm">Essenciais para o funcionamento do site</p>
+                    <p className="text-gray-400 text-sm">
+                      Essenciais para o funcionamento do site
+                    </p>
                   </div>
                   <div className="w-12 h-6 bg-green-500 rounded-full flex items-center justify-end px-1">
                     <div className="w-4 h-4 bg-white rounded-full" />
@@ -283,13 +289,22 @@ function CookieConsent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-white font-medium">Analytics</h4>
-                    <p className="text-gray-400 text-sm">Nos ajudam a melhorar o site</p>
+                    <p className="text-gray-400 text-sm">
+                      Nos ajudam a melhorar o site
+                    </p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setPreferences(prev => ({ ...prev, analytics: !prev.analytics }))}
+                    onClick={() =>
+                      setPreferences((prev) => ({
+                        ...prev,
+                        analytics: !prev.analytics,
+                      }))
+                    }
                     className={`w-12 h-6 rounded-full flex items-center px-1 ${
-                      preferences.analytics ? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'
+                      preferences.analytics
+                        ? "bg-green-500 justify-end"
+                        : "bg-gray-600 justify-start"
                     }`}
                   >
                     <div className="w-4 h-4 bg-white rounded-full" />
@@ -299,13 +314,22 @@ function CookieConsent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-white font-medium">Marketing</h4>
-                    <p className="text-gray-400 text-sm">Para personalização de conteúdo</p>
+                    <p className="text-gray-400 text-sm">
+                      Para personalização de conteúdo
+                    </p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setPreferences(prev => ({ ...prev, marketing: !prev.marketing }))}
+                    onClick={() =>
+                      setPreferences((prev) => ({
+                        ...prev,
+                        marketing: !prev.marketing,
+                      }))
+                    }
                     className={`w-12 h-6 rounded-full flex items-center px-1 ${
-                      preferences.marketing ? 'bg-green-500 justify-end' : 'bg-gray-600 justify-start'
+                      preferences.marketing
+                        ? "bg-green-500 justify-end"
+                        : "bg-gray-600 justify-start"
                     }`}
                   >
                     <div className="w-4 h-4 bg-white rounded-full" />
@@ -338,31 +362,31 @@ function CookieConsent() {
 // Performance monitoring
 export function usePerformanceMonitoring() {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Monitor Core Web Vitals
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.entryType === 'navigation') {
+        if (entry.entryType === "navigation") {
           const navEntry = entry as PerformanceNavigationTiming;
-          
+
           // Track page load time
           const loadTime = navEntry.loadEventEnd - navEntry.loadEventStart;
-          if (typeof window.gtag !== 'undefined') {
-            window.gtag('event', 'timing_complete', {
-              name: 'load',
+          if (typeof window.gtag !== "undefined") {
+            window.gtag("event", "timing_complete", {
+              name: "load",
               value: Math.round(loadTime),
             });
           }
         }
-        
-        if (entry.entryType === 'largest-contentful-paint') {
+
+        if (entry.entryType === "largest-contentful-paint") {
           const lcpEntry = entry as PerformanceEntry;
-          if (typeof window.gtag !== 'undefined') {
-            window.gtag('event', 'web_vital', {
-              name: 'LCP',
+          if (typeof window.gtag !== "undefined") {
+            window.gtag("event", "web_vital", {
+              name: "LCP",
               value: Math.round(lcpEntry.startTime),
-              event_category: 'performance',
+              event_category: "performance",
             });
           }
         }
@@ -370,9 +394,11 @@ export function usePerformanceMonitoring() {
     });
 
     try {
-      observer.observe({ entryTypes: ['navigation', 'largest-contentful-paint'] });
+      observer.observe({
+        entryTypes: ["navigation", "largest-contentful-paint"],
+      });
     } catch (error) {
-      console.warn('Performance observer not supported:', error);
+      console.warn("Performance observer not supported:", error);
     }
 
     return () => observer.disconnect();
@@ -381,7 +407,7 @@ export function usePerformanceMonitoring() {
 
 // Web Vitals tracking
 export function trackWebVitals() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
   // Track CLS (Cumulative Layout Shift)
   let clsValue = 0;
@@ -393,8 +419,11 @@ export function trackWebVitals() {
         const firstEntry = clsEntries[0];
         const lastEntry = clsEntries[clsEntries.length - 1];
 
-        if (!firstEntry || entry.startTime - lastEntry.startTime < 1000 ||
-            entry.startTime - firstEntry.startTime < 5000) {
+        if (
+          !firstEntry ||
+          entry.startTime - lastEntry.startTime < 1000 ||
+          entry.startTime - firstEntry.startTime < 5000
+        ) {
           clsValue += (entry as any).value;
           clsEntries.push(entry);
         } else {
@@ -406,46 +435,46 @@ export function trackWebVitals() {
   });
 
   try {
-    observer.observe({ entryTypes: ['layout-shift'] });
+    observer.observe({ entryTypes: ["layout-shift"] });
   } catch (error) {
-    console.warn('Layout shift observer not supported:', error);
+    console.warn("Layout shift observer not supported:", error);
   }
 
   // Track when page is hidden to send final CLS value
   const sendCLS = () => {
-    if (typeof window.gtag !== 'undefined') {
-      window.gtag('event', 'web_vital', {
-        name: 'CLS',
+    if (typeof window.gtag !== "undefined") {
+      window.gtag("event", "web_vital", {
+        name: "CLS",
         value: Math.round(clsValue * 1000),
-        event_category: 'performance',
+        event_category: "performance",
       });
     }
   };
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
       sendCLS();
     }
   });
 
-  window.addEventListener('beforeunload', sendCLS);
+  window.addEventListener("beforeunload", sendCLS);
 }
 
 // Error tracking
 export function trackError(error: Error, errorInfo?: any) {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'exception', {
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "exception", {
       description: error.message,
       fatal: false,
     });
   }
 
   // Send to custom error tracking
-  if (typeof window !== 'undefined') {
-    fetch('/api/analytics/error', {
-      method: 'POST',
+  if (typeof window !== "undefined") {
+    fetch("/api/analytics/error", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: error.message,
@@ -464,25 +493,31 @@ export function trackError(error: Error, errorInfo?: any) {
 // Session tracking
 export function useSessionTracking() {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     let sessionStart = Date.now();
     let isActive = true;
 
     const trackSession = () => {
       const sessionDuration = Date.now() - sessionStart;
-      
-      if (typeof window.gtag !== 'undefined') {
-        window.gtag('event', 'session_duration', {
+
+      if (typeof window.gtag !== "undefined") {
+        window.gtag("event", "session_duration", {
           value: Math.round(sessionDuration / 1000),
-          event_category: 'engagement',
+          event_category: "engagement",
         });
       }
     };
 
     // Track activity
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
+    const activityEvents = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+    ];
+
     const handleActivity = () => {
       if (!isActive) {
         isActive = true;
@@ -498,26 +533,26 @@ export function useSessionTracking() {
     };
 
     // Set up activity tracking
-    activityEvents.forEach(event => {
+    activityEvents.forEach((event) => {
       document.addEventListener(event, handleActivity, true);
     });
 
     // Track when page becomes hidden
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
         trackSession();
       }
     });
 
     // Track when user leaves
-    window.addEventListener('beforeunload', trackSession);
+    window.addEventListener("beforeunload", trackSession);
 
     return () => {
-      activityEvents.forEach(event => {
+      activityEvents.forEach((event) => {
         document.removeEventListener(event, handleActivity, true);
       });
-      document.removeEventListener('visibilitychange', trackSession);
-      window.removeEventListener('beforeunload', trackSession);
+      document.removeEventListener("visibilitychange", trackSession);
+      window.removeEventListener("beforeunload", trackSession);
     };
   }, []);
 }
@@ -525,24 +560,25 @@ export function useSessionTracking() {
 // Scroll depth tracking
 export function useScrollDepthTracking() {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const thresholds = [25, 50, 75, 100];
     const triggered = new Set<number>();
 
     const trackScrollDepth = () => {
       const scrollTop = window.pageYOffset;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
       const scrollPercent = Math.round((scrollTop / docHeight) * 100);
 
-      thresholds.forEach(threshold => {
+      thresholds.forEach((threshold) => {
         if (scrollPercent >= threshold && !triggered.has(threshold)) {
           triggered.add(threshold);
-          
-          if (typeof window.gtag !== 'undefined') {
-            window.gtag('event', 'scroll_depth', {
+
+          if (typeof window.gtag !== "undefined") {
+            window.gtag("event", "scroll_depth", {
               value: threshold,
-              event_category: 'engagement',
+              event_category: "engagement",
             });
           }
         }
@@ -560,10 +596,10 @@ export function useScrollDepthTracking() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, User, Briefcase, Award, Mail, Settings, LogIn, LogOut,
@@ -17,20 +17,26 @@ export const Navbar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Close mobile menu when changing route
+  useEffect(() => {
+    setIsOpen(false);
+    setShowUserMenu(false);
+  }, [pathname]);
+
   const navigationItems = [
-    { id: 'home', label: 'Início', icon: <Home />, path: '/' },
-    { id: 'about', label: 'Sobre', icon: <User />, path: '/about' },
-    { id: 'projects', label: 'Projetos', icon: <Briefcase />, path: '/projects' },
-    { id: 'skills', label: 'Habilidades', icon: <Code />, path: '/skills' },
-    { id: 'certificates', label: 'Certificados', icon: <Award />, path: '/certificates' },
-    { id: 'contact', label: 'Contato', icon: <Mail />, path: '/contact' },
+    { id: 'home', label: 'Início', icon: <Home className="w-5 h-5" />, path: '/' },
+    { id: 'about', label: 'Sobre', icon: <User className="w-5 h-5" />, path: '/about' },
+    { id: 'projects', label: 'Projetos', icon: <Briefcase className="w-5 h-5" />, path: '/projects' },
+    { id: 'skills', label: 'Habilidades', icon: <Code className="w-5 h-5" />, path: '/skills' },
+    { id: 'certificates', label: 'Certificados', icon: <Award className="w-5 h-5" />, path: '/certificates' },
+    { id: 'contact', label: 'Contato', icon: <Mail className="w-5 h-5" />, path: '/contact' },
   ];
 
   const adminItems = [
-    { id: 'dashboard', label: 'Dashboard', path: '/admin' },
-    { id: 'projects', label: 'Projetos', path: '/admin/projects' },
-    { id: 'certificates', label: 'Certificados', path: '/admin/certificates' },
-    { id: 'settings', label: 'Configurações', path: '/admin/settings' },
+    { id: 'dashboard', label: 'Dashboard', icon: <BarChartIcon className="w-5 h-5" />, path: '/admin' },
+    { id: 'projects', label: 'Projetos', icon: <Briefcase className="w-5 h-5" />, path: '/admin?tab=projects' },
+    { id: 'certificates', label: 'Certificados', icon: <Award className="w-5 h-5" />, path: '/admin?tab=certificates' },
+    { id: 'settings', label: 'Configurações', icon: <Settings className="w-5 h-5" />, path: '/admin?tab=settings' },
   ];
 
   const handleLogout = async () => {
@@ -67,7 +73,7 @@ export const Navbar: React.FC = () => {
             </motion.div>
           </Link>
 
-          {/* Navegação Desktop */}
+          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
             {navigationItems.map((item) => (
               <Link key={item.id} href={item.path}>
@@ -79,16 +85,16 @@ export const Navbar: React.FC = () => {
                       : 'text-gray-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {item.icon}
+                  {React.cloneElement(item.icon, { className: 'w-5 h-5' })}
                   <span>{item.label}</span>
                 </motion.div>
               </Link>
             ))}
           </div>
 
-          {/* Ações da Direita */}
+          {/* Right Actions */}
           <div className="flex items-center space-x-3">
-            {/* Tema */}
+            {/* Theme Toggle */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               onClick={() => setThemeMode(theme.mode === 'dark' ? 'light' : 'dark')}
@@ -111,7 +117,7 @@ export const Navbar: React.FC = () => {
                     className="w-8 h-8 rounded-full border border-white/20"
                   />
                   <span className="text-white text-sm hidden md:block">
-                    {authState.user?.name}
+                    {authState.user?.name || 'Admin User'}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </motion.button>
@@ -123,7 +129,7 @@ export const Navbar: React.FC = () => {
                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      className="absolute right-0 mt-2 w-64 bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden"
+                      className="absolute right-0 mt-2 w-64 bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden z-50"
                     >
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-white/10">
@@ -134,8 +140,8 @@ export const Navbar: React.FC = () => {
                             className="w-10 h-10 rounded-full border border-white/20"
                           />
                           <div>
-                            <div className="text-white font-medium">{authState.user?.name}</div>
-                            <div className="text-gray-400 text-sm">{authState.user?.email}</div>
+                            <div className="text-white font-medium">{authState.user?.name || 'Admin User'}</div>
+                            <div className="text-gray-400 text-sm">{authState.user?.email || 'admin@portfolio.com'}</div>
                           </div>
                         </div>
                       </div>
@@ -157,7 +163,7 @@ export const Navbar: React.FC = () => {
                                     : 'text-gray-300 hover:text-white'
                                 }`}
                               >
-                                <Shield className="w-4 h-4" />
+                                {React.cloneElement(item.icon, { className: 'w-4 h-4' })}
                                 <span>{item.label}</span>
                               </motion.div>
                             </Link>
@@ -192,7 +198,7 @@ export const Navbar: React.FC = () => {
               </Link>
             )}
 
-            {/* Menu Mobile */}
+            {/* Mobile Menu Button */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               onClick={() => setIsOpen(!isOpen)}
@@ -203,7 +209,7 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Menu Mobile */}
+        {/* Mobile Menu */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -224,7 +230,7 @@ export const Navbar: React.FC = () => {
                           : 'text-gray-300 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      {item.icon}
+                      {React.cloneElement(item.icon, { className: 'w-5 h-5' })}
                       <span>{item.label}</span>
                     </motion.div>
                   </Link>
@@ -247,7 +253,7 @@ export const Navbar: React.FC = () => {
                               : 'text-gray-300 hover:text-white hover:bg-white/5'
                           }`}
                         >
-                          <Shield className="w-5 h-5" />
+                          {React.cloneElement(item.icon, { className: 'w-5 h-5' })}
                           <span>{item.label}</span>
                         </motion.div>
                       </Link>
@@ -270,3 +276,12 @@ export const Navbar: React.FC = () => {
     </motion.nav>
   );
 };
+
+// Bar Chart Icon component
+const BarChartIcon = ({ className = "w-6 h-6" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="20" x2="12" y2="10"></line>
+    <line x1="18" y1="20" x2="18" y2="4"></line>
+    <line x1="6" y1="20" x2="6" y2="16"></line>
+  </svg>
+);

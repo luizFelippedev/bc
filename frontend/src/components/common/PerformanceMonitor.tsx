@@ -1,7 +1,7 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Wifi, Zap, Clock, AlertTriangle } from 'lucide-react';
+"use client";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Activity, Wifi, Zap, Clock, AlertTriangle } from "lucide-react";
 
 interface PerformanceMetrics {
   // Core Web Vitals
@@ -10,15 +10,15 @@ interface PerformanceMetrics {
   cls?: number; // Cumulative Layout Shift
   fcp?: number; // First Contentful Paint
   ttfb?: number; // Time to First Byte
-  
+
   // Network
-  connection?: 'slow-2g' | '2g' | '3g' | '4g' | 'unknown';
+  connection?: "slow-2g" | "2g" | "3g" | "4g" | "unknown";
   downlink?: number;
-  
+
   // Memory (if available)
   usedJSHeapSize?: number;
   totalJSHeapSize?: number;
-  
+
   // Custom metrics
   pageLoadTime?: number;
   resourceCount?: number;
@@ -31,79 +31,86 @@ export const PerformanceMonitor = () => {
 
   useEffect(() => {
     // Only run in development or when explicitly enabled
-    const shouldMonitor = process.env.NODE_ENV === 'development' || 
-                         localStorage.getItem('performance-monitor') === 'true';
-    
+    const shouldMonitor =
+      process.env.NODE_ENV === "development" ||
+      localStorage.getItem("performance-monitor") === "true";
+
     if (!shouldMonitor) return;
 
     measurePerformance();
     setupPerformanceObserver();
-    
+
     // Re-measure every 30 seconds
     const interval = setInterval(measurePerformance, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   const measurePerformance = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    const paint = performance.getEntriesByType('paint');
-    
+    const navigation = performance.getEntriesByType(
+      "navigation",
+    )[0] as PerformanceNavigationTiming;
+    const paint = performance.getEntriesByType("paint");
+
     const newMetrics: PerformanceMetrics = {};
 
     // Basic timing
     if (navigation) {
-      newMetrics.pageLoadTime = navigation.loadEventEnd - navigation.loadEventStart;
+      newMetrics.pageLoadTime =
+        navigation.loadEventEnd - navigation.loadEventStart;
       newMetrics.ttfb = navigation.responseStart - navigation.requestStart;
     }
 
     // Paint metrics
-    const fcp = paint.find(entry => entry.name === 'first-contentful-paint');
+    const fcp = paint.find((entry) => entry.name === "first-contentful-paint");
     if (fcp) {
       newMetrics.fcp = fcp.startTime;
     }
 
     // Network information
-    if ('connection' in navigator) {
+    if ("connection" in navigator) {
       const connection = (navigator as any).connection;
       newMetrics.connection = connection.effectiveType;
       newMetrics.downlink = connection.downlink;
     }
 
     // Memory information (Chrome only)
-    if ('memory' in performance) {
+    if ("memory" in performance) {
       const memory = (performance as any).memory;
       newMetrics.usedJSHeapSize = memory.usedJSHeapSize;
       newMetrics.totalJSHeapSize = memory.totalJSHeapSize;
     }
 
     // Resource count
-    newMetrics.resourceCount = performance.getEntriesByType('resource').length;
+    newMetrics.resourceCount = performance.getEntriesByType("resource").length;
 
     setMetrics(newMetrics);
     calculatePerformanceScore(newMetrics);
   };
 
   const setupPerformanceObserver = () => {
-    if (!('PerformanceObserver' in window)) return;
+    if (!("PerformanceObserver" in window)) return;
 
     // Observe Web Vitals
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         switch (entry.entryType) {
-          case 'largest-contentful-paint':
-            setMetrics(prev => ({ ...prev, lcp: entry.startTime }));
+          case "largest-contentful-paint":
+            setMetrics((prev) => ({ ...prev, lcp: entry.startTime }));
             break;
-          case 'first-input':
-            setMetrics(prev => ({ ...prev, fid: (entry as any).processingStart - entry.startTime }));
+          case "first-input":
+            setMetrics((prev) => ({
+              ...prev,
+              fid: (entry as any).processingStart - entry.startTime,
+            }));
             break;
-          case 'layout-shift':
+          case "layout-shift":
             if (!(entry as any).hadRecentInput) {
-              setMetrics(prev => ({ 
-                ...prev, 
-                cls: (prev.cls || 0) + (entry as any).value 
+              setMetrics((prev) => ({
+                ...prev,
+                cls: (prev.cls || 0) + (entry as any).value,
               }));
             }
             break;
@@ -112,10 +119,12 @@ export const PerformanceMonitor = () => {
     });
 
     try {
-      observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
+      observer.observe({
+        entryTypes: ["largest-contentful-paint", "first-input", "layout-shift"],
+      });
     } catch (e) {
       // Some browsers might not support all entry types
-      console.warn('Some performance metrics not supported:', e);
+      console.warn("Some performance metrics not supported:", e);
     }
   };
 
@@ -141,7 +150,7 @@ export const PerformanceMonitor = () => {
     }
 
     // Network quality
-    if (metrics.connection === 'slow-2g' || metrics.connection === '2g') {
+    if (metrics.connection === "slow-2g" || metrics.connection === "2g") {
       score -= 10;
     }
 
@@ -156,24 +165,24 @@ export const PerformanceMonitor = () => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-400';
-    if (score >= 70) return 'text-yellow-400';
-    return 'text-red-400';
+    if (score >= 90) return "text-green-400";
+    if (score >= 70) return "text-yellow-400";
+    return "text-red-400";
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Excelente';
-    if (score >= 70) return 'Bom';
-    if (score >= 50) return 'Precisa melhorar';
-    return 'Ruim';
+    if (score >= 90) return "Excelente";
+    if (score >= 70) return "Bom";
+    if (score >= 50) return "Precisa melhorar";
+    return "Ruim";
   };
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const formatTime = (ms: number) => {
@@ -182,8 +191,10 @@ export const PerformanceMonitor = () => {
   };
 
   // Only show in development or when explicitly enabled
-  if (process.env.NODE_ENV !== 'development' && 
-      localStorage.getItem('performance-monitor') !== 'true') {
+  if (
+    process.env.NODE_ENV !== "development" &&
+    localStorage.getItem("performance-monitor") !== "true"
+  ) {
     return null;
   }
 
@@ -198,7 +209,9 @@ export const PerformanceMonitor = () => {
       >
         <div className="flex items-center space-x-2">
           <Activity className="w-4 h-4" />
-          <span className={`text-xs font-bold ${getScoreColor(performanceScore)}`}>
+          <span
+            className={`text-xs font-bold ${getScoreColor(performanceScore)}`}
+          >
             {performanceScore}
           </span>
         </div>
@@ -231,10 +244,16 @@ export const PerformanceMonitor = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-300">Score Geral</span>
                 <div className="flex items-center space-x-2">
-                  <span className={`text-lg font-bold ${getScoreColor(performanceScore)}`}>
+                  <span
+                    className={`text-lg font-bold ${getScoreColor(
+                      performanceScore,
+                    )}`}
+                  >
                     {performanceScore}
                   </span>
-                  <span className={`text-xs ${getScoreColor(performanceScore)}`}>
+                  <span
+                    className={`text-xs ${getScoreColor(performanceScore)}`}
+                  >
                     {getScoreLabel(performanceScore)}
                   </span>
                 </div>
@@ -243,15 +262,21 @@ export const PerformanceMonitor = () => {
 
             {/* Core Web Vitals */}
             <div className="space-y-3 mb-4">
-              <h4 className="text-sm font-medium text-gray-300">Core Web Vitals</h4>
-              
+              <h4 className="text-sm font-medium text-gray-300">
+                Core Web Vitals
+              </h4>
+
               {metrics.lcp && (
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
                     <Zap className="w-3 h-3 mr-2 text-blue-400" />
                     <span>LCP</span>
                   </div>
-                  <span className={metrics.lcp > 2500 ? 'text-red-400' : 'text-green-400'}>
+                  <span
+                    className={
+                      metrics.lcp > 2500 ? "text-red-400" : "text-green-400"
+                    }
+                  >
                     {formatTime(metrics.lcp)}
                   </span>
                 </div>
@@ -263,7 +288,11 @@ export const PerformanceMonitor = () => {
                     <Clock className="w-3 h-3 mr-2 text-yellow-400" />
                     <span>FID</span>
                   </div>
-                  <span className={metrics.fid > 100 ? 'text-red-400' : 'text-green-400'}>
+                  <span
+                    className={
+                      metrics.fid > 100 ? "text-red-400" : "text-green-400"
+                    }
+                  >
                     {formatTime(metrics.fid)}
                   </span>
                 </div>
@@ -275,7 +304,11 @@ export const PerformanceMonitor = () => {
                     <AlertTriangle className="w-3 h-3 mr-2 text-purple-400" />
                     <span>CLS</span>
                   </div>
-                  <span className={metrics.cls > 0.1 ? 'text-red-400' : 'text-green-400'}>
+                  <span
+                    className={
+                      metrics.cls > 0.1 ? "text-red-400" : "text-green-400"
+                    }
+                  >
                     {metrics.cls.toFixed(3)}
                   </span>
                 </div>
@@ -285,7 +318,9 @@ export const PerformanceMonitor = () => {
             {/* Network Info */}
             {metrics.connection && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Network</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">
+                  Network
+                </h4>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
                     <Wifi className="w-3 h-3 mr-2 text-green-400" />
@@ -305,17 +340,22 @@ export const PerformanceMonitor = () => {
             {/* Memory Info */}
             {metrics.usedJSHeapSize && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Memory</h4>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">
+                  Memory
+                </h4>
                 <div className="flex items-center justify-between text-sm">
                   <span>JS Heap</span>
                   <span>{formatBytes(metrics.usedJSHeapSize)}</span>
                 </div>
                 {metrics.totalJSHeapSize && (
                   <div className="w-full bg-gray-700 rounded-full h-1 mt-1">
-                    <div 
+                    <div
                       className="bg-blue-400 h-1 rounded-full"
-                      style={{ 
-                        width: `${(metrics.usedJSHeapSize / metrics.totalJSHeapSize) * 100}%` 
+                      style={{
+                        width: `${
+                          (metrics.usedJSHeapSize / metrics.totalJSHeapSize) *
+                          100
+                        }%`,
                       }}
                     />
                   </div>
@@ -331,9 +371,7 @@ export const PerformanceMonitor = () => {
               {metrics.pageLoadTime && (
                 <div>Load Time: {formatTime(metrics.pageLoadTime)}</div>
               )}
-              {metrics.ttfb && (
-                <div>TTFB: {formatTime(metrics.ttfb)}</div>
-              )}
+              {metrics.ttfb && <div>TTFB: {formatTime(metrics.ttfb)}</div>}
             </div>
 
             {/* Actions */}
@@ -358,14 +396,16 @@ export const usePerformanceMetrics = () => {
 
   useEffect(() => {
     const updateMetrics = () => {
-      if (typeof window === 'undefined') return;
+      if (typeof window === "undefined") return;
 
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      
+      const navigation = performance.getEntriesByType(
+        "navigation",
+      )[0] as PerformanceNavigationTiming;
+
       setMetrics({
         pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
         ttfb: navigation.responseStart - navigation.requestStart,
-        resourceCount: performance.getEntriesByType('resource').length
+        resourceCount: performance.getEntriesByType("resource").length,
       });
     };
 

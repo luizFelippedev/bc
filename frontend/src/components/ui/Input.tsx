@@ -1,5 +1,5 @@
-import React from 'react';
-import { clsx } from 'clsx';
+import React from "react";
+import { clsx } from "clsx";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -31,13 +31,13 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           className={clsx(
-            'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all',
+            "w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all",
             {
-              'pl-10': leftIcon,
-              'pr-10': rightIcon,
-              'border-red-500 focus:ring-red-500': error,
+              "pl-10": leftIcon,
+              "pr-10": rightIcon,
+              "border-red-500 focus:ring-red-500": error,
             },
-            className
+            className,
           )}
           {...props}
         />
@@ -47,9 +47,7 @@ export const Input: React.FC<InputProps> = ({
           </div>
         )}
       </div>
-      {error && (
-        <p className="mt-2 text-sm text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
 };

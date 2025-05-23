@@ -1,5 +1,5 @@
 // Placeholder utility for generating consistent placeholder images
-export type PlaceholderType = 'general' | 'profile' | 'project' | 'certificate';
+export type PlaceholderType = "general" | "profile" | "project" | "certificate";
 
 interface PlaceholderOptions {
   width: number;
@@ -18,9 +18,9 @@ export function generateSVGDataUrl(options: PlaceholderOptions): string {
     width,
     height,
     text = `${width}×${height}`,
-    background = '#374151',
-    textColor = '#9CA3AF',
-    type = 'general'
+    background = "#374151",
+    textColor = "#9CA3AF",
+    type = "general",
   } = options;
 
   const fontSize = Math.min(width, height) / 8;
@@ -50,10 +50,10 @@ export function generateSVGDataUrl(options: PlaceholderOptions): string {
  */
 function getTypeColors(type: PlaceholderType) {
   const colors = {
-    general: { primary: '#374151', secondary: '#4B5563' },
-    profile: { primary: '#3B82F6', secondary: '#6366F1' },
-    project: { primary: '#10B981', secondary: '#059669' },
-    certificate: { primary: '#F59E0B', secondary: '#D97706' }
+    general: { primary: "#374151", secondary: "#4B5563" },
+    profile: { primary: "#3B82F6", secondary: "#6366F1" },
+    project: { primary: "#10B981", secondary: "#059669" },
+    certificate: { primary: "#F59E0B", secondary: "#D97706" },
   };
 
   return colors[type] || colors.general;
@@ -65,22 +65,22 @@ function getTypeColors(type: PlaceholderType) {
 export const placeholders = {
   // General placeholder
   general: (width: number, height: number, text?: string): string => {
-    return generateSVGDataUrl({ width, height, text, type: 'general' });
+    return generateSVGDataUrl({ width, height, text, type: "general" });
   },
 
   // User avatar placeholder
-  userAvatar: (name: string = 'User', size: number = 40): string => {
+  userAvatar: (name: string = "User", size: number = 40): string => {
     const initials = name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase())
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase())
       .slice(0, 2)
-      .join('');
+      .join("");
 
     return generateSVGDataUrl({
       width: size,
       height: size,
       text: initials,
-      type: 'profile'
+      type: "profile",
     });
   },
 
@@ -89,8 +89,8 @@ export const placeholders = {
     return generateSVGDataUrl({
       width,
       height,
-      text: title || 'Project',
-      type: 'project'
+      text: title || "Project",
+      type: "project",
     });
   },
 
@@ -99,8 +99,8 @@ export const placeholders = {
     return generateSVGDataUrl({
       width,
       height,
-      text: title || 'Certificate',
-      type: 'certificate'
+      text: title || "Certificate",
+      type: "certificate",
     });
   },
 
@@ -112,26 +112,30 @@ export const placeholders = {
   // External fallback URLs
   external: {
     picsum: (width: number, height: number, id?: number): string => {
-      const seedParam = id ? `?random=${id}` : `?random=${Math.floor(Math.random() * 1000)}`;
+      const seedParam = id
+        ? `?random=${id}`
+        : `?random=${Math.floor(Math.random() * 1000)}`;
       return `https://picsum.photos/${width}/${height}${seedParam}`;
     },
 
     placeholder: (width: number, height: number, text?: string): string => {
-      const textParam = text ? `&text=${encodeURIComponent(text)}` : '';
+      const textParam = text ? `&text=${encodeURIComponent(text)}` : "";
       return `https://via.placeholder.com/${width}x${height}/374151/9CA3AF${textParam}`;
     },
 
     uiAvatars: (name: string, size: number = 40): string => {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=${size}&background=3B82F6&color=ffffff&rounded=true`;
-    }
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        name,
+      )}&size=${size}&background=3B82F6&color=ffffff&rounded=true`;
+    },
   },
 
   // Smart fallback that tries multiple sources
   smartFallback: (
-    width: number, 
-    height: number, 
-    type: PlaceholderType = 'general',
-    name?: string
+    width: number,
+    height: number,
+    type: PlaceholderType = "general",
+    name?: string,
   ): string[] => {
     const fallbacks: string[] = [];
 
@@ -139,8 +143,10 @@ export const placeholders = {
     fallbacks.push(placeholders.apiEndpoint(width, height));
 
     // Secondary: External services
-    if (type === 'profile' && name) {
-      fallbacks.push(placeholders.external.uiAvatars(name, Math.max(width, height)));
+    if (type === "profile" && name) {
+      fallbacks.push(
+        placeholders.external.uiAvatars(name, Math.max(width, height)),
+      );
     } else {
       fallbacks.push(placeholders.external.picsum(width, height));
       fallbacks.push(placeholders.external.placeholder(width, height));
@@ -150,7 +156,7 @@ export const placeholders = {
     fallbacks.push(generateSVGDataUrl({ width, height, type }));
 
     return fallbacks;
-  }
+  },
 };
 
 /**
@@ -160,11 +166,11 @@ export function usePlaceholderImage(
   originalSrc: string | undefined,
   width: number,
   height: number,
-  type: PlaceholderType = 'general',
-  name?: string
+  type: PlaceholderType = "general",
+  name?: string,
 ) {
   const fallbacks = placeholders.smartFallback(width, height, type, name);
-  
+
   // Return original src if available, otherwise first fallback
   return originalSrc || fallbacks[0];
 }
@@ -193,7 +199,7 @@ export const contentPlaceholders = {
     small: (name: string): string => placeholders.userAvatar(name, 32),
     medium: (name: string): string => placeholders.userAvatar(name, 48),
     large: (name: string): string => placeholders.userAvatar(name, 80),
-    xl: (name: string): string => placeholders.userAvatar(name, 120)
+    xl: (name: string): string => placeholders.userAvatar(name, 120),
   },
 
   // Technology icons placeholder
@@ -202,24 +208,27 @@ export const contentPlaceholders = {
       width: 32,
       height: 32,
       text: techName.charAt(0).toUpperCase(),
-      type: 'general'
+      type: "general",
     });
-  }
+  },
 };
 
 /**
  * Validate image URL and provide fallback
  */
-export async function validateImageUrl(url: string, fallbackOptions: PlaceholderOptions): Promise<string> {
+export async function validateImageUrl(
+  url: string,
+  fallbackOptions: PlaceholderOptions,
+): Promise<string> {
   try {
-    const response = await fetch(url, { method: 'HEAD' });
+    const response = await fetch(url, { method: "HEAD" });
     if (response.ok) {
       return url;
     }
   } catch (error) {
-    console.warn('Image validation failed:', error);
+    console.warn("Image validation failed:", error);
   }
-  
+
   return generateSVGDataUrl(fallbackOptions);
 }
 
@@ -228,14 +237,14 @@ export async function validateImageUrl(url: string, fallbackOptions: Placeholder
  */
 export function preloadPlaceholderImages(images: string[]): Promise<void[]> {
   return Promise.all(
-    images.map(src => {
+    images.map((src) => {
       return new Promise<void>((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve();
         img.onerror = () => reject(new Error(`Failed to load ${src}`));
         img.src = src;
       });
-    })
+    }),
   );
 }
 
@@ -245,31 +254,34 @@ export function preloadPlaceholderImages(images: string[]): Promise<void[]> {
 export function responsivePlaceholder(
   baseWidth: number,
   baseHeight: number,
-  type: PlaceholderType = 'general'
+  type: PlaceholderType = "general",
 ): { mobile: string; tablet: string; desktop: string } {
   return {
-    mobile: generateSVGDataUrl({ 
-      width: Math.round(baseWidth * 0.5), 
-      height: Math.round(baseHeight * 0.5), 
-      type 
+    mobile: generateSVGDataUrl({
+      width: Math.round(baseWidth * 0.5),
+      height: Math.round(baseHeight * 0.5),
+      type,
     }),
-    tablet: generateSVGDataUrl({ 
-      width: Math.round(baseWidth * 0.75), 
-      height: Math.round(baseHeight * 0.75), 
-      type 
+    tablet: generateSVGDataUrl({
+      width: Math.round(baseWidth * 0.75),
+      height: Math.round(baseHeight * 0.75),
+      type,
     }),
-    desktop: generateSVGDataUrl({ 
-      width: baseWidth, 
-      height: baseHeight, 
-      type 
-    })
+    desktop: generateSVGDataUrl({
+      width: baseWidth,
+      height: baseHeight,
+      type,
+    }),
   };
 }
 
 /**
  * Generate placeholder for OpenGraph/Social Media
  */
-export function socialMediaPlaceholder(title: string, description?: string): string {
+export function socialMediaPlaceholder(
+  title: string,
+  description?: string,
+): string {
   const width = 1200;
   const height = 630;
   const fontSize = 48;
@@ -288,12 +300,18 @@ export function socialMediaPlaceholder(title: string, description?: string): str
             fill="white" text-anchor="middle" dominant-baseline="middle" font-weight="bold">
         ${title}
       </text>
-      ${description ? `
+      ${
+        description
+          ? `
         <text x="50%" y="60%" font-family="Arial, sans-serif" font-size="${descFontSize}" 
               fill="rgba(255,255,255,0.8)" text-anchor="middle" dominant-baseline="middle">
-          ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}
+          ${description.substring(0, 100)}${
+            description.length > 100 ? "..." : ""
+          }
         </text>
-      ` : ''}
+      `
+          : ""
+      }
     </svg>
   `;
 

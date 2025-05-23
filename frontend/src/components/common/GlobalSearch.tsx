@@ -1,16 +1,26 @@
-'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, X, Clock, Briefcase, Award, User, Mail, 
-  ArrowRight, Command, Hash, Calendar, MapPin
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useDebouncedState } from '@/hooks';
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Search,
+  X,
+  Clock,
+  Briefcase,
+  Award,
+  User,
+  Mail,
+  ArrowRight,
+  Command,
+  Hash,
+  Calendar,
+  MapPin,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useDebouncedState } from "@/hooks";
 
 interface SearchResult {
   id: string;
-  type: 'project' | 'skill' | 'certificate' | 'page' | 'contact';
+  type: "project" | "skill" | "certificate" | "page" | "contact";
   title: string;
   description: string;
   url: string;
@@ -30,92 +40,92 @@ interface SearchSection {
 
 const mockSearchData: SearchResult[] = [
   {
-    id: '1',
-    type: 'project',
-    title: 'E-commerce Platform',
-    description: 'Plataforma completa de e-commerce com React e Node.js',
-    url: '/projects/ecommerce-platform',
+    id: "1",
+    type: "project",
+    title: "E-commerce Platform",
+    description: "Plataforma completa de e-commerce com React e Node.js",
+    url: "/projects/ecommerce-platform",
     metadata: {
-      date: '2024-01-15',
-      tags: ['React', 'Node.js', 'E-commerce'],
-      category: 'Web Application'
+      date: "2024-01-15",
+      tags: ["React", "Node.js", "E-commerce"],
+      category: "Web Application",
     },
-    score: 0.95
+    score: 0.95,
   },
   {
-    id: '2',
-    type: 'skill',
-    title: 'React',
-    description: 'Framework JavaScript para interfaces de usuário',
-    url: '/skills#react',
+    id: "2",
+    type: "skill",
+    title: "React",
+    description: "Framework JavaScript para interfaces de usuário",
+    url: "/skills#react",
     metadata: {
-      category: 'Frontend',
-      tags: ['JavaScript', 'UI', 'Frontend']
+      category: "Frontend",
+      tags: ["JavaScript", "UI", "Frontend"],
     },
-    score: 0.9
+    score: 0.9,
   },
   {
-    id: '3',
-    type: 'certificate',
-    title: 'AWS Solutions Architect',
-    description: 'Certificação em arquitetura de soluções AWS',
-    url: '/certificates#aws',
+    id: "3",
+    type: "certificate",
+    title: "AWS Solutions Architect",
+    description: "Certificação em arquitetura de soluções AWS",
+    url: "/certificates#aws",
     metadata: {
-      date: '2024-01-15',
-      category: 'Cloud Computing'
+      date: "2024-01-15",
+      category: "Cloud Computing",
     },
-    score: 0.85
+    score: 0.85,
   },
   {
-    id: '4',
-    type: 'page',
-    title: 'Sobre Mim',
-    description: 'Conheça minha trajetória profissional e experiências',
-    url: '/about',
-    score: 0.7
+    id: "4",
+    type: "page",
+    title: "Sobre Mim",
+    description: "Conheça minha trajetória profissional e experiências",
+    url: "/about",
+    score: 0.7,
   },
   {
-    id: '5',
-    type: 'contact',
-    title: 'Entre em Contato',
-    description: 'Vamos conversar sobre seu próximo projeto',
-    url: '/contact',
-    score: 0.6
-  }
+    id: "5",
+    type: "contact",
+    title: "Entre em Contato",
+    description: "Vamos conversar sobre seu próximo projeto",
+    url: "/contact",
+    score: 0.6,
+  },
 ];
 
 export const GlobalSearch: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [debouncedQuery] = useDebouncedState(query, 300);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   // Keyboard shortcut to open search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setIsOpen(true);
       }
-      
-      if (e.key === 'Escape') {
+
+      if (e.key === "Escape") {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Load recent searches
   useEffect(() => {
-    const saved = localStorage.getItem('recent-searches');
+    const saved = localStorage.getItem("recent-searches");
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
@@ -140,26 +150,27 @@ export const GlobalSearch: React.FC = () => {
 
   const performSearch = async (searchQuery: string) => {
     setIsLoading(true);
-    
+
     try {
       // Simulate API call - replace with actual search API
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const filtered = mockSearchData.filter(item => 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.metadata?.tags?.some(tag => 
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const filtered = mockSearchData.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.metadata?.tags?.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase()),
+          ),
       );
-      
+
       // Sort by score
       filtered.sort((a, b) => b.score - a.score);
-      
+
       setResults(filtered);
       setSelectedIndex(0);
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error("Search failed:", error);
       setResults([]);
     } finally {
       setIsLoading(false);
@@ -167,13 +178,13 @@ export const GlobalSearch: React.FC = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
-    } else if (e.key === 'ArrowUp') {
+      setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex(prev => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter') {
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === "Enter") {
       e.preventDefault();
       if (results[selectedIndex]) {
         handleResultClick(results[selectedIndex]);
@@ -183,14 +194,17 @@ export const GlobalSearch: React.FC = () => {
 
   const handleResultClick = (result: SearchResult) => {
     // Save to recent searches
-    const newRecent = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+    const newRecent = [
+      query,
+      ...recentSearches.filter((s) => s !== query),
+    ].slice(0, 5);
     setRecentSearches(newRecent);
-    localStorage.setItem('recent-searches', JSON.stringify(newRecent));
-    
+    localStorage.setItem("recent-searches", JSON.stringify(newRecent));
+
     // Navigate to result
     router.push(result.url);
     setIsOpen(false);
-    setQuery('');
+    setQuery("");
   };
 
   const handleRecentClick = (recent: string) => {
@@ -200,50 +214,53 @@ export const GlobalSearch: React.FC = () => {
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem('recent-searches');
+    localStorage.removeItem("recent-searches");
   };
 
-  const getIcon = (type: SearchResult['type']) => {
+  const getIcon = (type: SearchResult["type"]) => {
     switch (type) {
-      case 'project':
+      case "project":
         return <Briefcase className="w-4 h-4" />;
-      case 'skill':
+      case "skill":
         return <Hash className="w-4 h-4" />;
-      case 'certificate':
+      case "certificate":
         return <Award className="w-4 h-4" />;
-      case 'page':
+      case "page":
         return <User className="w-4 h-4" />;
-      case 'contact':
+      case "contact":
         return <Mail className="w-4 h-4" />;
       default:
         return <Search className="w-4 h-4" />;
     }
   };
 
-  const getTypeLabel = (type: SearchResult['type']) => {
+  const getTypeLabel = (type: SearchResult["type"]) => {
     switch (type) {
-      case 'project':
-        return 'Projeto';
-      case 'skill':
-        return 'Habilidade';
-      case 'certificate':
-        return 'Certificado';
-      case 'page':
-        return 'Página';
-      case 'contact':
-        return 'Contato';
+      case "project":
+        return "Projeto";
+      case "skill":
+        return "Habilidade";
+      case "certificate":
+        return "Certificado";
+      case "page":
+        return "Página";
+      case "contact":
+        return "Contato";
       default:
         return type;
     }
   };
 
-  const groupedResults = results.reduce((acc, result) => {
-    if (!acc[result.type]) {
-      acc[result.type] = [];
-    }
-    acc[result.type].push(result);
-    return acc;
-  }, {} as Record<string, SearchResult[]>);
+  const groupedResults = results.reduce(
+    (acc, result) => {
+      if (!acc[result.type]) {
+        acc[result.type] = [];
+      }
+      acc[result.type].push(result);
+      return acc;
+    },
+    {} as Record<string, SearchResult[]>,
+  );
 
   return (
     <>
@@ -277,7 +294,7 @@ export const GlobalSearch: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               className="w-full max-w-2xl mt-20 bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl"
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Search Input */}
               <div className="flex items-center p-6 border-b border-white/10">
@@ -293,7 +310,7 @@ export const GlobalSearch: React.FC = () => {
                 />
                 {query && (
                   <button
-                    onClick={() => setQuery('')}
+                    onClick={() => setQuery("")}
                     className="p-1 text-gray-400 hover:text-white"
                   >
                     <X className="w-4 h-4" />
@@ -319,8 +336,10 @@ export const GlobalSearch: React.FC = () => {
                     {Object.entries(groupedResults).map(([type, items]) => (
                       <div key={type} className="mb-4">
                         <div className="flex items-center px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          {getIcon(type as SearchResult['type'])}
-                          <span className="ml-2">{getTypeLabel(type as SearchResult['type'])}</span>
+                          {getIcon(type as SearchResult["type"])}
+                          <span className="ml-2">
+                            {getTypeLabel(type as SearchResult["type"])}
+                          </span>
                         </div>
                         {items.map((result, index) => {
                           const globalIndex = results.indexOf(result);
@@ -331,33 +350,46 @@ export const GlobalSearch: React.FC = () => {
                               onClick={() => handleResultClick(result)}
                               className={`w-full flex items-center p-4 rounded-xl text-left transition-all ${
                                 globalIndex === selectedIndex
-                                  ? 'bg-primary-500/20 border border-primary-500/30'
-                                  : 'hover:bg-white/5'
+                                  ? "bg-primary-500/20 border border-primary-500/30"
+                                  : "hover:bg-white/5"
                               }`}
                             >
                               <div className="flex-1">
                                 <div className="flex items-center">
-                                  <span className="font-medium text-white">{result.title}</span>
+                                  <span className="font-medium text-white">
+                                    {result.title}
+                                  </span>
                                   {result.metadata?.category && (
                                     <span className="ml-2 px-2 py-1 bg-white/10 rounded text-xs text-gray-300">
                                       {result.metadata.category}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-gray-400 text-sm mt-1">{result.description}</p>
+                                <p className="text-gray-400 text-sm mt-1">
+                                  {result.description}
+                                </p>
                                 {result.metadata?.tags && (
                                   <div className="flex flex-wrap gap-1 mt-2">
-                                    {result.metadata.tags.slice(0, 3).map((tag, i) => (
-                                      <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">
-                                        {tag}
-                                      </span>
-                                    ))}
+                                    {result.metadata.tags
+                                      .slice(0, 3)
+                                      .map((tag, i) => (
+                                        <span
+                                          key={i}
+                                          className="px-2 py-1 bg-white/5 rounded text-xs text-gray-400"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
                                   </div>
                                 )}
                                 {result.metadata?.date && (
                                   <div className="flex items-center mt-2 text-xs text-gray-500">
                                     <Calendar className="w-3 h-3 mr-1" />
-                                    <span>{new Date(result.metadata.date).toLocaleDateString('pt-BR')}</span>
+                                    <span>
+                                      {new Date(
+                                        result.metadata.date,
+                                      ).toLocaleDateString("pt-BR")}
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -371,7 +403,9 @@ export const GlobalSearch: React.FC = () => {
                 ) : query && !isLoading ? (
                   <div className="p-6 text-center">
                     <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-400">Nenhum resultado encontrado para "{query}"</p>
+                    <p className="text-gray-400">
+                      Nenhum resultado encontrado para "{query}"
+                    </p>
                   </div>
                 ) : (
                   <div className="p-6">
@@ -407,13 +441,31 @@ export const GlobalSearch: React.FC = () => {
 
                     {/* Quick Actions */}
                     <div>
-                      <h3 className="text-sm font-medium text-gray-400 mb-3">Ações Rápidas</h3>
+                      <h3 className="text-sm font-medium text-gray-400 mb-3">
+                        Ações Rápidas
+                      </h3>
                       <div className="space-y-1">
                         {[
-                          { label: 'Ver Projetos', url: '/projects', icon: <Briefcase /> },
-                          { label: 'Minhas Habilidades', url: '/skills', icon: <Hash /> },
-                          { label: 'Certificações', url: '/certificates', icon: <Award /> },
-                          { label: 'Entre em Contato', url: '/contact', icon: <Mail /> }
+                          {
+                            label: "Ver Projetos",
+                            url: "/projects",
+                            icon: <Briefcase />,
+                          },
+                          {
+                            label: "Minhas Habilidades",
+                            url: "/skills",
+                            icon: <Hash />,
+                          },
+                          {
+                            label: "Certificações",
+                            url: "/certificates",
+                            icon: <Award />,
+                          },
+                          {
+                            label: "Entre em Contato",
+                            url: "/contact",
+                            icon: <Mail />,
+                          },
                         ].map((action, index) => (
                           <button
                             key={index}
@@ -426,7 +478,9 @@ export const GlobalSearch: React.FC = () => {
                             <div className="text-gray-400 mr-3">
                               {action.icon}
                             </div>
-                            <span className="text-gray-300">{action.label}</span>
+                            <span className="text-gray-300">
+                              {action.label}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -452,7 +506,9 @@ export const GlobalSearch: React.FC = () => {
                   </div>
                 </div>
                 {results.length > 0 && (
-                  <span>{results.length} resultado{results.length !== 1 ? 's' : ''}</span>
+                  <span>
+                    {results.length} resultado{results.length !== 1 ? "s" : ""}
+                  </span>
                 )}
               </div>
             </motion.div>

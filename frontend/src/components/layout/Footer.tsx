@@ -1,64 +1,73 @@
-'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Github, Linkedin, Twitter, Mail, Heart, ArrowUp,
-  Code, Coffee, Zap, Globe, Calendar, MapPin
-} from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Github,
+  Linkedin,
+  Twitter,
+  Mail,
+  Heart,
+  ArrowUp,
+  Code,
+  Coffee,
+  Zap,
+  Globe,
+  Calendar,
+  MapPin,
+} from "lucide-react";
+import Link from "next/link";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
     {
-      name: 'GitHub',
+      name: "GitHub",
       icon: <Github className="w-5 h-5" />,
-      href: 'https://github.com/joaosilva',
-      color: 'hover:text-gray-300'
+      href: "https://github.com/joaosilva",
+      color: "hover:text-gray-300",
     },
     {
-      name: 'LinkedIn',
+      name: "LinkedIn",
       icon: <Linkedin className="w-5 h-5" />,
-      href: 'https://linkedin.com/in/joaosilva',
-      color: 'hover:text-blue-400'
+      href: "https://linkedin.com/in/joaosilva",
+      color: "hover:text-blue-400",
     },
     {
-      name: 'Twitter',
+      name: "Twitter",
       icon: <Twitter className="w-5 h-5" />,
-      href: 'https://twitter.com/joaosilva',
-      color: 'hover:text-blue-400'
+      href: "https://twitter.com/joaosilva",
+      color: "hover:text-blue-400",
     },
     {
-      name: 'Email',
+      name: "Email",
       icon: <Mail className="w-5 h-5" />,
-      href: 'mailto:joao@portfolio.com',
-      color: 'hover:text-primary-400'
-    }
+      href: "mailto:joao@portfolio.com",
+      color: "hover:text-primary-400",
+    },
   ];
 
   const quickLinks = [
-    { name: 'Início', href: '/' },
-    { name: 'Sobre', href: '/about' },
-    { name: 'Projetos', href: '/projects' },
-    { name: 'Skills', href: '/skills' },
-    { name: 'Certificações', href: '/certificates' },
-    { name: 'Contato', href: '/contact' }
+    { name: "Início", href: "/" },
+    { name: "Sobre", href: "/about" },
+    { name: "Projetos", href: "/projects" },
+    { name: "Skills", href: "/skills" },
+    { name: "Certificações", href: "/certificates" },
+    { name: "Contato", href: "/contact" },
   ];
 
   const services = [
-    'Desenvolvimento Web',
-    'Aplicações Mobile',
-    'APIs & Backend',
-    'Consultoria IA',
-    'Automação',
-    'Cloud Solutions'
+    "Desenvolvimento Web",
+    "Aplicações Mobile",
+    "APIs & Backend",
+    "Consultoria IA",
+    "Automação",
+    "Cloud Solutions",
   ];
 
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
   };
 
@@ -90,10 +99,11 @@ export const Footer: React.FC = () => {
                 <p className="text-gray-400 text-sm">Full Stack Developer</p>
               </div>
             </div>
-            
+
             <p className="text-gray-400 mb-6 leading-relaxed max-w-md">
-              Desenvolvedor apaixonado por criar experiências digitais excepcionais. 
-              Especializado em React, Node.js e tecnologias de IA para soluções inovadoras.
+              Desenvolvedor apaixonado por criar experiências digitais
+              excepcionais. Especializado em React, Node.js e tecnologias de IA
+              para soluções inovadoras.
             </p>
 
             <div className="flex items-center space-x-4 text-gray-400 text-sm mb-6">
@@ -131,9 +141,7 @@ export const Footer: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h4 className="text-lg font-semibold text-white mb-6">
-              Navegação
-            </h4>
+            <h4 className="text-lg font-semibold text-white mb-6">Navegação</h4>
             <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
@@ -154,9 +162,7 @@ export const Footer: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h4 className="text-lg font-semibold text-white mb-6">
-              Serviços
-            </h4>
+            <h4 className="text-lg font-semibold text-white mb-6">Serviços</h4>
             <ul className="space-y-3">
               {services.map((service) => (
                 <li key={service} className="text-gray-400 text-sm">
@@ -175,21 +181,19 @@ export const Footer: React.FC = () => {
           className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 mt-12 border-t border-white/10"
         >
           {[
-            { icon: <Code />, value: '50+', label: 'Projetos' },
-            { icon: <Coffee />, value: '1000+', label: 'Cafés' },
-            { icon: <Zap />, value: '5+', label: 'Anos' },
-            { icon: <Heart />, value: '∞', label: 'Paixão' }
+            { icon: <Code />, value: "50+", label: "Projetos" },
+            { icon: <Coffee />, value: "1000+", label: "Cafés" },
+            { icon: <Zap />, value: "5+", label: "Anos" },
+            { icon: <Heart />, value: "∞", label: "Paixão" },
           ].map((stat, index) => (
             <div key={index} className="text-center">
               <div className="text-primary-400 mb-2 flex justify-center">
-                {React.cloneElement(stat.icon, { className: 'w-6 h-6' })}
+                {React.cloneElement(stat.icon, { className: "w-6 h-6" })}
               </div>
               <div className="text-2xl font-bold text-white mb-1">
                 {stat.value}
               </div>
-              <div className="text-gray-400 text-sm">
-                {stat.label}
-              </div>
+              <div className="text-gray-400 text-sm">{stat.label}</div>
             </div>
           ))}
         </motion.div>
@@ -206,9 +210,10 @@ export const Footer: React.FC = () => {
               Fique por dentro das novidades
             </h4>
             <p className="text-gray-400 mb-6">
-              Receba updates sobre novos projetos, artigos e insights sobre tecnologia.
+              Receba updates sobre novos projetos, artigos e insights sobre
+              tecnologia.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
                 type="email"
@@ -235,7 +240,7 @@ export const Footer: React.FC = () => {
             className="text-gray-400 text-sm mb-4 md:mb-0"
           >
             <div className="flex items-center space-x-2">
-              <span>© {currentYear} João Silva. Feito com</span>
+              <span>© {currentYear} Luiz Felippe. Feito com</span>
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
@@ -264,7 +269,7 @@ export const Footer: React.FC = () => {
             >
               Termos
             </Link>
-            
+
             {/* Scroll to top button */}
             <motion.button
               whileHover={{ scale: 1.1, y: -2 }}
@@ -286,7 +291,8 @@ export const Footer: React.FC = () => {
           className="text-center mt-8 pt-8 border-t border-white/5"
         >
           <p className="text-gray-500 text-xs">
-            Construído com Next.js, React, TypeScript, Tailwind CSS & Framer Motion
+            Construído com Next.tsx, React, TypeScript, Tailwind CSS & Framer
+            Motion
           </p>
         </motion.div>
       </div>

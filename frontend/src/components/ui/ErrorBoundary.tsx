@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { AlertTriangle, RefreshCw, Home, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { motion } from "framer-motion";
+import { AlertTriangle, RefreshCw, Home, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -16,7 +16,10 @@ interface ErrorBoundaryProps {
   fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -28,9 +31,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ error, errorInfo });
-    
+
     // Log error to monitoring service
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   handleRetry = () => {
@@ -41,10 +44,20 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback;
-        return <FallbackComponent error={this.state.error!} retry={this.handleRetry} />;
+        return (
+          <FallbackComponent
+            error={this.state.error!}
+            retry={this.handleRetry}
+          />
+        );
       }
 
-      return <DefaultErrorFallback error={this.state.error!} retry={this.handleRetry} />;
+      return (
+        <DefaultErrorFallback
+          error={this.state.error!}
+          retry={this.handleRetry}
+        />
+      );
     }
 
     return this.props.children;
@@ -57,7 +70,10 @@ interface ErrorFallbackProps {
   retry: () => void;
 }
 
-const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, retry }) => (
+const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
+  error,
+  retry,
+}) => (
   <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 pt-20 flex items-center justify-center px-6">
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -66,29 +82,30 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, retry }) =>
     >
       <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
         <motion.div
-          animate={{ 
+          animate={{
             rotate: [0, 10, -10, 0],
-            scale: [1, 1.1, 1]
+            scale: [1, 1.1, 1],
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
-            repeatDelay: 3
+            repeatDelay: 3,
           }}
           className="w-16 h-16 mx-auto mb-6 bg-red-500/20 rounded-full flex items-center justify-center"
         >
           <AlertTriangle className="w-8 h-8 text-red-400" />
         </motion.div>
-        
+
         <h2 className="text-2xl font-bold text-white mb-4">
           Ops! Algo deu errado
         </h2>
-        
+
         <p className="text-gray-400 mb-6">
-          Encontramos um erro inesperado. Nossa equipe foi notificada e estamos trabalhando para resolver.
+          Encontramos um erro inesperado. Nossa equipe foi notificada e estamos
+          trabalhando para resolver.
         </p>
 
-        {process.env.NODE_ENV === 'development' && (
+        {process.env.NODE_ENV === "development" && (
           <details className="mb-6 text-left">
             <summary className="text-sm text-gray-500 cursor-pointer mb-2">
               Detalhes do erro (desenvolvimento)
@@ -109,7 +126,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, retry }) =>
             <RefreshCw className="w-4 h-4" />
             <span>Tentar Novamente</span>
           </motion.button>
-          
+
           <Link href="/">
             <motion.button
               whileHover={{ scale: 1.05 }}

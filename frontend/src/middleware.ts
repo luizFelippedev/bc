@@ -1,86 +1,123 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// Protected routes that require authentication
-const protectedRoutes = ['/admin'];
+// Rotas protegidas da interface
+const protectedRoutes = ["/admin"];
 
-// Public routes that should redirect if user is already authenticated
-const authRoutes = ['/login'];
+// Rotas públicas (ex: login)
+const authRoutes = ["/login"];
 
-// API routes that require authentication
-const protectedApiRoutes = ['/api/admin'];
+// Rotas de API protegidas
+const protectedApiRoutes = ["/api/admin"];
+
+// Verifica se o usuário está autenticado
+function isUserAuthenticated(request: NextRequest): boolean {
+  const authCookie = request.cookies.get("portfolio_token");
+  const authHeader = request.headers.get("Authorization");
+  const hasToken =
+    !!authCookie?.value || (authHeader && authHeader.startsWith("Bearer "));
+
+  const isDev = process.env.NODE_ENV === "development";
+
+  return hasToken || isDev;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('portfolio_token')?.value;
-  const isAuthenticated = !!token;
+  const isAuthenticated = isUserAuthenticated(request);
 
-  // Check if the route is protected and user is not authenticated
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+  // 🔒 Rotas protegidas da interface
+  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     if (!isAuthenticated) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('callbackUrl', pathname);
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[Middleware] Acesso negado a ${pathname}, redirecionando para login`,
+        );
+      }
+
       return NextResponse.redirect(loginUrl);
     }
-  }
 
-  // Check if user is trying to access auth routes while authenticated
-  if (authRoutes.some(route => pathname.startsWith(route))) {
-    if (isAuthenticated) {
-      return NextResponse.redirect(new URL('/admin', request.url));
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[Middleware] Acesso permitido a ${pathname}`);
     }
   }
 
-  // Check API routes
-  if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
+  // 🔁 Rotas públicas (ex: login) redireciona se já autenticado
+  if (authRoutes.some((route) => pathname.startsWith(route))) {
+    if (isAuthenticated) {
+      const callbackUrl =
+        request.nextUrl.searchParams.get("callbackUrl") || "/admin";
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[Middleware] Usuário autenticado, redirecionando para ${callbackUrl}`);
+      }
+
+      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    }
+  }
+
+  // 🛡️ Rotas de API protegidas
+  if (
+    protectedApiRoutes.some((route) => pathname.startsWith(route)) &&
+    request.method !== "OPTIONS"
+  ) {
     if (!isAuthenticated) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[Middleware] Acesso negado à API: ${pathname}`);
+      }
+
       return new NextResponse(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Authentication required' 
+        JSON.stringify({
+          success: false,
+          message: "Autenticação necessária",
+          code: "auth_required",
         }),
-        { 
-          status: 401, 
-          headers: { 'content-type': 'application/json' } 
-        }
+        {
+          status: 401,
+          headers: { "content-type": "application/json" },
+        },
       );
     }
   }
 
-  // Add security headers
+  // ✅ Resposta padrão com headers de segurança
   const response = NextResponse.next();
-  
-  // Security headers
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  
-  // CORS headers for API routes
-  if (pathname.startsWith('/api/')) {
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  }
 
-  // Rate limiting headers (you would implement actual rate limiting with Redis or similar)
-  response.headers.set('X-RateLimit-Limit', '100');
-  response.headers.set('X-RateLimit-Remaining', '99');
-  response.headers.set('X-RateLimit-Reset', `${Date.now() + 60000}`);
+  // Headers de segurança
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "origin-when-cross-origin");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+
+  // Headers CORS para API
+  if (pathname.startsWith("/api/")) {
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS",
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization",
+    );
+  }
 
   return response;
 }
 
-// Configure which paths the middleware should run on
+// Define quais caminhos o middleware deve interceptar
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
+    /**
+     * Executa em todos os caminhos exceto:
+     * - _next/static
+     * - _next/image
+     * - favicon.ico
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

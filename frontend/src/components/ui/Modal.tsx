@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import React, { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   closeOnOverlayClick?: boolean;
   closeOnEsc?: boolean;
   showCloseButton?: boolean;
@@ -20,36 +20,36 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  size = 'md',
+  size = "md",
   closeOnOverlayClick = true,
   closeOnEsc = true,
   showCloseButton = true,
-  className = ''
+  className = "",
 }) => {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (closeOnEsc && e.key === 'Escape') {
+      if (closeOnEsc && e.key === "Escape") {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleEsc);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "unset";
     };
   }, [isOpen, closeOnEsc, onClose]);
 
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-[95vw] max-h-[95vh]'
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+    full: "max-w-[95vw] max-h-[95vh]",
   };
 
   if (!isOpen) return null;
@@ -72,16 +72,14 @@ export const Modal: React.FC<ModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', duration: 0.5 }}
+            transition={{ type: "spring", duration: 0.5 }}
             className={`relative w-full ${sizeClasses[size]} bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden ${className}`}
           >
             {/* Header */}
             {(title || showCloseButton) && (
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 {title && (
-                  <h2 className="text-xl font-semibold text-white">
-                    {title}
-                  </h2>
+                  <h2 className="text-xl font-semibold text-white">{title}</h2>
                 )}
                 {showCloseButton && (
                   <motion.button
@@ -97,9 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             {/* Content */}
-            <div className="p-6">
-              {children}
-            </div>
+            <div className="p-6">{children}</div>
           </motion.div>
         </div>
       )}
@@ -107,7 +103,7 @@ export const Modal: React.FC<ModalProps> = ({
   );
 
   // Use portal to render modal at body level
-  return typeof window !== 'undefined' 
+  return typeof window !== "undefined"
     ? createPortal(modalContent, document.body)
     : null;
 };
@@ -121,7 +117,7 @@ interface ConfirmModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  type?: 'danger' | 'warning' | 'info';
+  type?: "danger" | "warning" | "info";
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -130,21 +126,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirmar',
-  cancelText = 'Cancelar',
-  type = 'info'
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  type = "info",
 }) => {
   const typeStyles = {
-    danger: 'from-red-600 to-red-700',
-    warning: 'from-yellow-600 to-yellow-700',
-    info: 'from-blue-600 to-blue-700'
+    danger: "from-red-600 to-red-700",
+    warning: "from-yellow-600 to-yellow-700",
+    info: "from-blue-600 to-blue-700",
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="text-center">
         <p className="text-gray-300 mb-6">{message}</p>
-        
+
         <div className="flex space-x-3 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -154,7 +150,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           >
             {cancelText}
           </motion.button>
-          
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -183,13 +179,13 @@ export const ImageModal: React.FC<ImageModalProps> = ({
   onClose,
   src,
   alt,
-  title
+  title,
 }) => {
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      size="full" 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
       className="bg-black/80"
       showCloseButton={false}
     >
@@ -201,13 +197,13 @@ export const ImageModal: React.FC<ImageModalProps> = ({
         >
           <X className="w-6 h-6 text-white" />
         </motion.button>
-        
+
         <img
           src={src}
           alt={alt}
           className="max-w-full max-h-full object-contain"
         />
-        
+
         {title && (
           <div className="absolute bottom-4 left-4 right-4 text-center">
             <p className="text-white text-lg font-medium bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2">
@@ -223,7 +219,7 @@ export const ImageModal: React.FC<ImageModalProps> = ({
 // Toast/Notification Component
 interface ToastProps {
   message: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
+  type?: "success" | "error" | "warning" | "info";
   isVisible: boolean;
   onClose: () => void;
   duration?: number;
@@ -231,10 +227,10 @@ interface ToastProps {
 
 export const Toast: React.FC<ToastProps> = ({
   message,
-  type = 'info',
+  type = "info",
   isVisible,
   onClose,
-  duration = 3000
+  duration = 3000,
 }) => {
   useEffect(() => {
     if (isVisible && duration > 0) {
@@ -244,10 +240,10 @@ export const Toast: React.FC<ToastProps> = ({
   }, [isVisible, duration, onClose]);
 
   const typeStyles = {
-    success: 'bg-green-500/20 border-green-500/30 text-green-400',
-    error: 'bg-red-500/20 border-red-500/30 text-red-400',
-    warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
-    info: 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+    success: "bg-green-500/20 border-green-500/30 text-green-400",
+    error: "bg-red-500/20 border-red-500/30 text-red-400",
+    warning: "bg-yellow-500/20 border-yellow-500/30 text-yellow-400",
+    info: "bg-blue-500/20 border-blue-500/30 text-blue-400",
   };
 
   return (
@@ -281,7 +277,7 @@ interface DropdownProps {
   children: React.ReactNode;
   isOpen: boolean;
   onToggle: () => void;
-  placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end';
+  placement?: "bottom-start" | "bottom-end" | "top-start" | "top-end";
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -289,21 +285,19 @@ export const Dropdown: React.FC<DropdownProps> = ({
   children,
   isOpen,
   onToggle,
-  placement = 'bottom-start'
+  placement = "bottom-start",
 }) => {
   const placementClasses = {
-    'bottom-start': 'top-full left-0 mt-2',
-    'bottom-end': 'top-full right-0 mt-2',
-    'top-start': 'bottom-full left-0 mb-2',
-    'top-end': 'bottom-full right-0 mb-2'
+    "bottom-start": "top-full left-0 mt-2",
+    "bottom-end": "top-full right-0 mt-2",
+    "top-start": "bottom-full left-0 mb-2",
+    "top-end": "bottom-full right-0 mb-2",
   };
 
   return (
     <div className="relative">
-      <div onClick={onToggle}>
-        {trigger}
-      </div>
-      
+      <div onClick={onToggle}>{trigger}</div>
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -327,8 +321,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
 interface ProgressBarProps {
   value: number;
   max?: number;
-  size?: 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+  size?: "sm" | "md" | "lg";
+  color?: "primary" | "secondary" | "success" | "warning" | "error";
   showLabel?: boolean;
   animated?: boolean;
 }
@@ -336,25 +330,25 @@ interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
   max = 100,
-  size = 'md',
-  color = 'primary',
+  size = "md",
+  color = "primary",
   showLabel = false,
-  animated = true
+  animated = true,
 }) => {
   const percentage = Math.min((value / max) * 100, 100);
-  
+
   const sizeClasses = {
-    sm: 'h-2',
-    md: 'h-3',
-    lg: 'h-4'
+    sm: "h-2",
+    md: "h-3",
+    lg: "h-4",
   };
 
   const colorClasses = {
-    primary: 'from-primary-500 to-primary-600',
-    secondary: 'from-secondary-500 to-secondary-600',
-    success: 'from-green-500 to-green-600',
-    warning: 'from-yellow-500 to-yellow-600',
-    error: 'from-red-500 to-red-600'
+    primary: "from-primary-500 to-primary-600",
+    secondary: "from-secondary-500 to-secondary-600",
+    success: "from-green-500 to-green-600",
+    warning: "from-yellow-500 to-yellow-600",
+    error: "from-red-500 to-red-600",
   };
 
   return (
@@ -365,12 +359,14 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           <span>{Math.round(percentage)}%</span>
         </div>
       )}
-      
-      <div className={`w-full bg-gray-700 rounded-full overflow-hidden ${sizeClasses[size]}`}>
+
+      <div
+        className={`w-full bg-gray-700 rounded-full overflow-hidden ${sizeClasses[size]}`}
+      >
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: animated ? 1 : 0, ease: 'easeOut' }}
+          transition={{ duration: animated ? 1 : 0, ease: "easeOut" }}
           className={`h-full bg-gradient-to-r ${colorClasses[color]} rounded-full`}
         />
       </div>
@@ -390,34 +386,34 @@ interface TabsProps {
   tabs: Tab[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
-  variant?: 'default' | 'pills' | 'underline';
+  variant?: "default" | "pills" | "underline";
 }
 
 export const Tabs: React.FC<TabsProps> = ({
   tabs,
   activeTab,
   onTabChange,
-  variant = 'default'
+  variant = "default",
 }) => {
   const variantClasses = {
     default: {
-      container: 'border-b border-white/10',
-      tab: 'px-4 py-2 -mb-px',
-      active: 'border-b-2 border-primary-500 text-primary-400',
-      inactive: 'text-gray-400 hover:text-white'
+      container: "border-b border-white/10",
+      tab: "px-4 py-2 -mb-px",
+      active: "border-b-2 border-primary-500 text-primary-400",
+      inactive: "text-gray-400 hover:text-white",
     },
     pills: {
-      container: 'bg-black/20 rounded-xl p-1',
-      tab: 'px-4 py-2 rounded-lg',
-      active: 'bg-primary-500 text-white',
-      inactive: 'text-gray-400 hover:text-white hover:bg-white/10'
+      container: "bg-black/20 rounded-xl p-1",
+      tab: "px-4 py-2 rounded-lg",
+      active: "bg-primary-500 text-white",
+      inactive: "text-gray-400 hover:text-white hover:bg-white/10",
     },
     underline: {
-      container: '',
-      tab: 'px-4 py-2 relative',
-      active: 'text-primary-400',
-      inactive: 'text-gray-400 hover:text-white'
-    }
+      container: "",
+      tab: "px-4 py-2 relative",
+      active: "text-primary-400",
+      inactive: "text-gray-400 hover:text-white",
+    },
   };
 
   const styles = variantClasses[variant];
@@ -438,8 +434,8 @@ export const Tabs: React.FC<TabsProps> = ({
           >
             {tab.icon}
             <span>{tab.label}</span>
-            
-            {variant === 'underline' && activeTab === tab.id && (
+
+            {variant === "underline" && activeTab === tab.id && (
               <motion.div
                 layoutId="activeTab"
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500"
@@ -459,7 +455,7 @@ export const Tabs: React.FC<TabsProps> = ({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {tabs.find(tab => tab.id === activeTab)?.content}
+            {tabs.find((tab) => tab.id === activeTab)?.content}
           </motion.div>
         </AnimatePresence>
       </div>

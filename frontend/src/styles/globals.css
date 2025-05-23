@@ -11,7 +11,7 @@
   --color-background: #0f172a;
   --color-surface: #1e293b;
   --color-text: #f8fafc;
-  
+
   /* Animações */
   --animation-duration: 0.3s;
   --transition-duration: 0.2s;
@@ -71,8 +71,9 @@
 body {
   background-color: var(--color-background);
   color: var(--color-text);
-  transition: background-color var(--transition-duration) ease,
-              color var(--transition-duration) ease;
+  transition:
+    background-color var(--transition-duration) ease,
+    color var(--transition-duration) ease;
 }
 
 /* Desabilitar animações quando necessário */
@@ -89,43 +90,51 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Cores usando variáveis CSS */
   .text-theme-primary {
     color: var(--color-primary);
   }
-  
+
   .text-theme-secondary {
     color: var(--color-secondary);
   }
-  
+
   .text-theme-accent {
     color: var(--color-accent);
   }
-  
+
   .bg-theme-primary {
     background-color: var(--color-primary);
   }
-  
+
   .bg-theme-secondary {
     background-color: var(--color-secondary);
   }
-  
+
   .bg-theme-surface {
     background-color: var(--color-surface);
   }
-  
+
   .border-theme-primary {
     border-color: var(--color-primary);
   }
-  
+
   /* Gradientes temáticos */
   .gradient-theme-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary),
+      var(--color-secondary)
+    );
   }
-  
+
   .gradient-theme-text {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary),
+      var(--color-secondary)
+    );
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -153,25 +162,33 @@ body {
 
 /* Animações customizadas */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes glow {
-  0% { 
-    box-shadow: 0 0 5px var(--color-primary), 
-                0 0 10px var(--color-primary), 
-                0 0 15px var(--color-primary); 
+  0% {
+    box-shadow:
+      0 0 5px var(--color-primary),
+      0 0 10px var(--color-primary),
+      0 0 15px var(--color-primary);
   }
-  100% { 
-    box-shadow: 0 0 10px var(--color-primary), 
-                0 0 20px var(--color-primary), 
-                0 0 30px var(--color-primary); 
+  100% {
+    box-shadow:
+      0 0 10px var(--color-primary),
+      0 0 20px var(--color-primary),
+      0 0 30px var(--color-primary);
   }
 }
 
 @keyframes pulse-theme {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -197,21 +214,31 @@ body {
 }
 
 @keyframes cyberpunk-flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-  75% { opacity: 0.9; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  75% {
+    opacity: 0.9;
+  }
 }
 
 @keyframes neon-glow {
-  0%, 100% {
-    text-shadow: 0 0 5px var(--color-primary),
-                 0 0 10px var(--color-primary),
-                 0 0 15px var(--color-primary);
+  0%,
+  100% {
+    text-shadow:
+      0 0 5px var(--color-primary),
+      0 0 10px var(--color-primary),
+      0 0 15px var(--color-primary);
   }
   50% {
-    text-shadow: 0 0 10px var(--color-primary),
-                 0 0 20px var(--color-primary),
-                 0 0 30px var(--color-primary);
+    text-shadow:
+      0 0 10px var(--color-primary),
+      0 0 20px var(--color-primary),
+      0 0 30px var(--color-primary);
   }
 }
 
@@ -274,7 +301,7 @@ body {
 
 /* Efeitos específicos por tema */
 .theme-cyberpunk * {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
 }
 
 .theme-matrix .text-theme-primary {
@@ -292,10 +319,12 @@ body {
 
 /* Loading states */
 .loading-skeleton {
-  background: linear-gradient(90deg, 
-    var(--color-surface) 25%, 
-    rgba(255, 255, 255, 0.1) 50%, 
-    var(--color-surface) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    var(--color-surface) 75%
+  );
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
 }
@@ -314,7 +343,7 @@ body {
   .no-print {
     display: none !important;
   }
-  
+
   * {
     background: white !important;
     color: black !important;

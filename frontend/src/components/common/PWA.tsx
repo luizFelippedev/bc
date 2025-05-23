@@ -1,15 +1,17 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Smartphone, Monitor } from 'lucide-react';
+"use client";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Download, X, Smartphone, Monitor } from "lucide-react";
 
 interface PWAInstallPrompt extends Event {
   prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 export const PWAManager = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<PWAInstallPrompt | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<PWAInstallPrompt | null>(
+    null,
+  );
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -17,12 +19,12 @@ export const PWAManager = () => {
 
   useEffect(() => {
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
 
     // Register service worker
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       registerServiceWorker();
     }
 
@@ -30,10 +32,10 @@ export const PWAManager = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as PWAInstallPrompt);
-      
+
       // Show install prompt after 30 seconds if not dismissed
       setTimeout(() => {
-        if (!isInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+        if (!isInstalled && !localStorage.getItem("pwa-install-dismissed")) {
           setShowInstallPrompt(true);
         }
       }, 30000);
@@ -44,38 +46,44 @@ export const PWAManager = () => {
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
-      console.log('PWA installed successfully');
+      console.log("PWA installed successfully");
     };
 
     // Online/offline status
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [isInstalled]);
 
   const registerServiceWorker = async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      
-      console.log('Service Worker registered:', registration);
+      const registration = await navigator.serviceWorker.register("/sw.js");
+
+      console.log("Service Worker registered:", registration);
 
       // Check for updates
-      registration.addEventListener('updatefound', () => {
+      registration.addEventListener("updatefound", () => {
         const newWorker = registration.installing;
         if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          newWorker.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
               setUpdateAvailable(true);
             }
           });
@@ -83,14 +91,13 @@ export const PWAManager = () => {
       });
 
       // Listen for messages from SW
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "UPDATE_AVAILABLE") {
           setUpdateAvailable(true);
         }
       });
-
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      console.error("Service Worker registration failed:", error);
     }
   };
 
@@ -100,31 +107,31 @@ export const PWAManager = () => {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted PWA install');
+
+      if (outcome === "accepted") {
+        console.log("User accepted PWA install");
       } else {
-        console.log('User dismissed PWA install');
-        localStorage.setItem('pwa-install-dismissed', 'true');
+        console.log("User dismissed PWA install");
+        localStorage.setItem("pwa-install-dismissed", "true");
       }
-      
+
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
     } catch (error) {
-      console.error('PWA install failed:', error);
+      console.error("PWA install failed:", error);
     }
   };
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem("pwa-install-dismissed", "true");
   };
 
   const handleUpdate = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then(registration => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((registration) => {
         if (registration?.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
           window.location.reload();
         }
       });
@@ -197,15 +204,16 @@ export const PWAManager = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Instalar Portfolio
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-                  Instale o portfolio como um app em seu dispositivo para acesso rápido e uso offline.
+                  Instale o portfolio como um app em seu dispositivo para acesso
+                  rápido e uso offline.
                 </p>
-                
+
                 <div className="flex space-x-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -216,7 +224,7 @@ export const PWAManager = () => {
                     <Download className="w-4 h-4" />
                     <span>Instalar</span>
                   </motion.button>
-                  
+
                   <button
                     onClick={handleDismiss}
                     className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
@@ -225,7 +233,7 @@ export const PWAManager = () => {
                   </button>
                 </div>
               </div>
-              
+
               <button
                 onClick={handleDismiss}
                 className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
@@ -248,8 +256,8 @@ export const usePWA = () => {
   useEffect(() => {
     // Check if running as PWA
     setIsInstalled(
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true
+      window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true,
     );
 
     // Online status
@@ -258,12 +266,12 @@ export const usePWA = () => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -273,12 +281,12 @@ export const usePWA = () => {
 // Componente para cache de recursos
 export const ResourcePreloader = ({ resources }: { resources: string[] }) => {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
         if (registration.active) {
           registration.active.postMessage({
-            type: 'CACHE_URLS',
-            urls: resources
+            type: "CACHE_URLS",
+            urls: resources,
           });
         }
       });

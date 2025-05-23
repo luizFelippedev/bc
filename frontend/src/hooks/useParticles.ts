@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect } from "react";
 
 interface ParticleType {
   x: number;
@@ -19,8 +19,8 @@ export const useParticles = (count: number = 50) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
+
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const resizeCanvas = () => {
@@ -41,7 +41,7 @@ export const useParticles = (count: number = 50) => {
     };
 
     const updateParticles = () => {
-      particlesRef.current.forEach(particle => {
+      particlesRef.current.forEach((particle) => {
         particle.x += particle.vx;
         particle.y += particle.vy;
 
@@ -51,7 +51,7 @@ export const useParticles = (count: number = 50) => {
         const dx = mouseRef.current.x - particle.x;
         const dy = mouseRef.current.y - particle.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < 100) {
           const force = (100 - distance) / 100;
           particle.vx += dx * force * 0.001;
@@ -62,8 +62,8 @@ export const useParticles = (count: number = 50) => {
 
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      particlesRef.current.forEach(particle => {
+
+      particlesRef.current.forEach((particle) => {
         ctx.save();
         ctx.globalAlpha = particle.opacity;
         ctx.fillStyle = particle.color;
@@ -93,15 +93,15 @@ export const useParticles = (count: number = 50) => {
     initParticles();
     animate();
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("resize", handleResize);
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", handleResize);
     };
   }, [count]);
 

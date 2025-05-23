@@ -1,18 +1,18 @@
-'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Home, ArrowLeft, Search, Mail } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+"use client";
+import React from "react";
+import { motion } from "framer-motion";
+import { Home, ArrowLeft, Search, Mail } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function NotFound() {
   const router = useRouter();
 
   const popularPages = [
-    { name: 'Sobre', href: '/about', description: 'Conheça minha trajetória' },
-    { name: 'Projetos', href: '/projects', description: 'Veja meus trabalhos' },
-    { name: 'Skills', href: '/skills', description: 'Minhas habilidades' },
-    { name: 'Contato', href: '/contact', description: 'Entre em contato' }
+    { name: "Sobre", href: "/about", description: "Conheça minha trajetória" },
+    { name: "Projetos", href: "/projects", description: "Veja meus trabalhos" },
+    { name: "Skills", href: "/skills", description: "Minhas habilidades" },
+    { name: "Contato", href: "/contact", description: "Entre em contato" },
   ];
 
   return (
@@ -27,16 +27,16 @@ export default function NotFound() {
               x: [0, 100, -100, 0],
               y: [0, -100, 100, 0],
               scale: [1, 1.5, 0.5, 1],
-              opacity: [0.2, 0.6, 0.2]
+              opacity: [0.2, 0.6, 0.2],
             }}
             transition={{
               duration: 6 + i,
               repeat: Infinity,
-              delay: i * 0.7
+              delay: i * 0.7,
             }}
             style={{
               left: `${5 + i * 12}%`,
-              top: `${15 + i * 8}%`
+              top: `${15 + i * 8}%`,
             }}
           />
         ))}
@@ -50,14 +50,14 @@ export default function NotFound() {
       >
         {/* 404 Number */}
         <motion.div
-          animate={{ 
+          animate={{
             rotateY: [0, 15, -15, 0],
-            scale: [1, 1.05, 1]
+            scale: [1, 1.05, 1],
           }}
-          transition={{ 
+          transition={{
             duration: 6,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
           className="mb-8"
         >
@@ -65,7 +65,7 @@ export default function NotFound() {
             404
           </div>
         </motion.div>
-        
+
         {/* Title and Description */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -76,12 +76,13 @@ export default function NotFound() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Página Não Encontrada
           </h1>
-          
+
           <p className="text-xl text-gray-400 mb-2">
             Ops! A página que você está procurando não existe.
           </p>
           <p className="text-gray-500">
-            Ela pode ter sido movida, removida ou você digitou o endereço incorretamente.
+            Ela pode ter sido movida, removida ou você digitou o endereço
+            incorretamente.
           </p>
         </motion.div>
 
@@ -101,7 +102,7 @@ export default function NotFound() {
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar</span>
           </motion.button>
-          
+
           <Link href="/">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -125,7 +126,7 @@ export default function NotFound() {
             <Search className="w-6 h-6 mr-2 text-primary-400" />
             Páginas Populares
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {popularPages.map((page, index) => (
               <Link key={page.name} href={page.href}>
@@ -139,9 +140,7 @@ export default function NotFound() {
                   <h3 className="text-white font-semibold mb-1 group-hover:text-primary-400 transition-colors">
                     {page.name}
                   </h3>
-                  <p className="text-gray-400 text-sm">
-                    {page.description}
-                  </p>
+                  <p className="text-gray-400 text-sm">{page.description}</p>
                 </motion.div>
               </Link>
             ))}

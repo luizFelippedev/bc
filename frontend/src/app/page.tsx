@@ -1,54 +1,77 @@
-'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  ChevronDown, Code, Star, Target, Users, TrendingUp, Award,
-  Github, Linkedin, Mail, ArrowRight, Zap, Globe, Briefcase, Heart
-} from 'lucide-react';
-import Link from 'next/link';
-import { useParticles } from '@/hooks/useParticles';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
-import { useAnimation } from '@/hooks';
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import {
+  ChevronDown,
+  Code,
+  Star,
+  Target,
+  Users,
+  TrendingUp,
+  Award,
+  Github,
+  Linkedin,
+  Mail,
+  ArrowRight,
+  Zap,
+  Globe,
+  Briefcase,
+  Heart,
+} from "lucide-react";
+import Link from "next/link";
+import { useParticles } from "@/hooks/useParticles";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { useAnimation } from "@/hooks";
 
 // Optimized Typed Text Component
-const TypedText: React.FC<{ texts: string[]; speed?: number }> = ({ texts, speed = 100 }) => {
+const TypedText: React.FC<{ texts: string[]; speed?: number }> = ({
+  texts,
+  speed = 100,
+}) => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
+  const [currentText, setCurrentText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (isPaused) return;
-    
-    const timeout = setTimeout(() => {
-      const fullText = texts[currentTextIndex];
-      
-      if (isDeleting) {
-        setCurrentText(prev => prev.slice(0, -1));
-        if (currentText === '') {
-          setIsDeleting(false);
-          setCurrentTextIndex((prev) => (prev + 1) % texts.length);
+
+    const timeout = setTimeout(
+      () => {
+        const fullText = texts[currentTextIndex];
+
+        if (isDeleting) {
+          setCurrentText((prev) => prev.slice(0, -1));
+          if (currentText === "") {
+            setIsDeleting(false);
+            setCurrentTextIndex((prev) => (prev + 1) % texts.length);
+          }
+        } else {
+          setCurrentText(fullText.slice(0, currentText.length + 1));
+          if (currentText === fullText) {
+            setIsPaused(true);
+            setTimeout(() => {
+              setIsPaused(false);
+              setIsDeleting(true);
+            }, 1500);
+          }
         }
-      } else {
-        setCurrentText(fullText.slice(0, currentText.length + 1));
-        if (currentText === fullText) {
-          setIsPaused(true);
-          setTimeout(() => {
-            setIsPaused(false);
-            setIsDeleting(true);
-          }, 1500);
-        }
-      }
-    }, isDeleting ? speed / 2 : speed);
+      },
+      isDeleting ? speed / 2 : speed,
+    );
 
     return () => clearTimeout(timeout);
   }, [currentText, isDeleting, currentTextIndex, texts, speed, isPaused]);
 
-  return <span className="border-r-2 border-primary-400 animate-pulse">{currentText}</span>;
+  return (
+    <span className="border-r-2 border-primary-400 animate-pulse">
+      {currentText}
+    </span>
+  );
 };
 
 // Featured Project Card
-const FeaturedProject: React.FC<{ 
+const FeaturedProject: React.FC<{
   title: string;
   description: string;
   tags: string[];
@@ -72,11 +95,11 @@ const FeaturedProject: React.FC<{
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
-      
+
       <div className="p-6">
         <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
         <p className="text-gray-400 text-sm mb-4">{description}</p>
-        
+
         <div className="flex flex-wrap gap-2 mb-4">
           {tags.map((tag, i) => (
             <span
@@ -87,8 +110,11 @@ const FeaturedProject: React.FC<{
             </span>
           ))}
         </div>
-        
-        <Link href={link} className="flex items-center text-primary-400 hover:text-primary-300 transition-colors text-sm">
+
+        <Link
+          href={link}
+          className="flex items-center text-primary-400 hover:text-primary-300 transition-colors text-sm"
+        >
           <span>Ver Projeto</span>
           <ArrowRight className="w-4 h-4 ml-1" />
         </Link>
@@ -115,7 +141,7 @@ const SkillCard: React.FC<{
       <div className="text-3xl text-primary-400 mb-4">{icon}</div>
       <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
       <p className="text-gray-400 text-sm mb-4">{description}</p>
-      
+
       <div className="w-full bg-gray-700 rounded-full h-2 mb-1">
         <motion.div
           initial={{ width: 0 }}
@@ -133,32 +159,36 @@ export default function HomePage() {
   const canvasRef = useParticles(80);
   const [heroRef, heroInView] = useIntersectionObserver({ threshold: 0.3 });
   const [statsRef, statsInView] = useIntersectionObserver({ threshold: 0.3 });
-  const [projectsRef, projectsInView] = useIntersectionObserver({ threshold: 0.3 });
+  const [projectsRef, projectsInView] = useIntersectionObserver({
+    threshold: 0.3,
+  });
   const [skillsRef, skillsInView] = useIntersectionObserver({ threshold: 0.3 });
 
   // Featured projects data
   const featuredProjects = [
     {
       title: "E-commerce Platform",
-      description: "Plataforma completa de e-commerce com React, Node.js e PostgreSQL",
+      description:
+        "Plataforma completa de e-commerce com React, Node.js e PostgreSQL",
       tags: ["React", "Node.js", "PostgreSQL"],
       image: "/api/placeholder/800/600",
-      link: "/projects/ecommerce-platform"
+      link: "/projects/ecommerce-platform",
     },
     {
       title: "AI Chat Assistant",
-      description: "Assistente de chat inteligente usando OpenAI GPT e React Native",
+      description:
+        "Assistente de chat inteligente usando OpenAI GPT e React Native",
       tags: ["React Native", "OpenAI", "Firebase"],
       image: "/api/placeholder/800/600",
-      link: "/projects/ai-chat-assistant"
+      link: "/projects/ai-chat-assistant",
     },
     {
       title: "Portfolio Dashboard",
       description: "Dashboard administrativo para gerenciamento de portfolio",
       tags: ["Next.js", "TypeScript", "MongoDB"],
       image: "/api/placeholder/800/600",
-      link: "/projects/portfolio-dashboard"
-    }
+      link: "/projects/portfolio-dashboard",
+    },
   ];
 
   // Key skills data
@@ -166,35 +196,55 @@ export default function HomePage() {
     {
       icon: <Code />,
       title: "Frontend Development",
-      description: "Criação de interfaces modernas e responsivas com React, Next.js e TypeScript",
-      level: 95
+      description:
+        "Criação de interfaces modernas e responsivas com React, Next.js e TypeScript",
+      level: 95,
     },
     {
       icon: <Zap />,
       title: "Backend Development",
-      description: "APIs robustas e escaláveis com Node.js, Express e bancos de dados relacionais/NoSQL",
-      level: 90
+      description:
+        "APIs robustas e escaláveis com Node.js, Express e bancos de dados relacionais/NoSQL",
+      level: 90,
     },
     {
       icon: <Briefcase />,
       title: "Mobile Development",
-      description: "Desenvolvimento de aplicativos mobile com React Native para iOS e Android",
-      level: 85
+      description:
+        "Desenvolvimento de aplicativos mobile com React Native para iOS e Android",
+      level: 85,
     },
     {
       icon: <Globe />,
       title: "DevOps & Cloud",
-      description: "Implementação de CI/CD, Docker, e soluções em nuvem com AWS e Firebase",
-      level: 80
-    }
+      description:
+        "Implementação de CI/CD, Docker, e soluções em nuvem com AWS e Firebase",
+      level: 80,
+    },
   ];
 
   // Stats data
   const stats = [
-    { icon: <Target className="w-8 h-8" />, value: '50+', label: 'Projetos Concluídos' },
-    { icon: <Users className="w-8 h-8" />, value: '25+', label: 'Clientes Satisfeitos' },
-    { icon: <Award className="w-8 h-8" />, value: '8+', label: 'Certificações' },
-    { icon: <TrendingUp className="w-8 h-8" />, value: '5+', label: 'Anos de Experiência' },
+    {
+      icon: <Target className="w-8 h-8" />,
+      value: "50+",
+      label: "Projetos Concluídos",
+    },
+    {
+      icon: <Users className="w-8 h-8" />,
+      value: "25+",
+      label: "Clientes Satisfeitos",
+    },
+    {
+      icon: <Award className="w-8 h-8" />,
+      value: "8+",
+      label: "Certificações",
+    },
+    {
+      icon: <TrendingUp className="w-8 h-8" />,
+      value: "5+",
+      label: "Anos de Experiência",
+    },
   ];
 
   return (
@@ -203,31 +253,34 @@ export default function HomePage() {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-0"
-        style={{ mixBlendMode: 'screen' }}
+        style={{ mixBlendMode: "screen" }}
         aria-hidden="true"
       />
 
       {/* Hero Section */}
-      <section 
+      <section
         ref={heroRef}
         className="relative min-h-screen flex items-center justify-center px-6 pt-20"
       >
         {/* Background Effects */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary-500/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
 
         <div className="relative z-10 text-center max-w-6xl mx-auto">
           {/* Avatar */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 1, type: 'spring', bounce: 0.4 }}
+            transition={{ duration: 1, type: "spring", bounce: 0.4 }}
             className="mb-8"
           >
             <div className="relative inline-block">
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-500 via-secondary-500 to-primary-500 p-1"
               >
                 <div className="w-full h-full bg-gray-900 rounded-full" />
@@ -264,22 +317,23 @@ export default function HomePage() {
             className="mb-8"
           >
             <p className="text-2xl md:text-3xl text-gray-300 mb-4">
-              Eu sou{' '}
+              Eu sou{" "}
               <span className="text-primary-400 font-mono">
                 <TypedText
                   texts={[
-                    'Desenvolvedor Full Stack',
-                    'Especialista em Inteligência Artificial',
-                    'Desenvolvedor de Software',
-                    'Criador de Experiências Digitais'
+                    "Desenvolvedor Full Stack",
+                    "Especialista em Inteligência Artificial",
+                    "Desenvolvedor de Software",
+                    "Criador de Experiências Digitais",
                   ]}
                 />
               </span>
             </p>
             <p className="text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed">
-              Engenheiro de Software Full-Stack com foco em aplicações modernas usando React, TypeScript e Node.js. 
-              Especializado em UI futurista, integrações com Firebase, IA com OpenAI, bots inteligentes, 
-              e bancos de dados performáticos.
+              Engenheiro de Software Full-Stack com foco em aplicações modernas
+              usando React, TypeScript e Node.js. Especializado em UI futurista,
+              integrações com Firebase, IA com OpenAI, bots inteligentes, e
+              bancos de dados performáticos.
             </p>
           </motion.div>
 
@@ -319,9 +373,21 @@ export default function HomePage() {
             className="flex justify-center space-x-4 mt-20"
           >
             {[
-              { icon: <Github />, href: 'https://github.com', ariaLabel: 'GitHub Profile' },
-              { icon: <Linkedin />, href: 'https://linkedin.com', ariaLabel: 'LinkedIn Profile' },
-              { icon: <Mail />, href: 'mailto:luizfelippeandrade@outlook.com', ariaLabel: 'Email Contact' },
+              {
+                icon: <Github />,
+                href: "https://github.com",
+                ariaLabel: "GitHub Profile",
+              },
+              {
+                icon: <Linkedin />,
+                href: "https://linkedin.com",
+                ariaLabel: "LinkedIn Profile",
+              },
+              {
+                icon: <Mail />,
+                href: "mailto:luizfelippeandrade@outlook.com",
+                ariaLabel: "Email Contact",
+              },
             ].map((social, index) => (
               <motion.a
                 key={index}
@@ -329,8 +395,12 @@ export default function HomePage() {
                 whileHover={{ scale: 1.2, rotate: 10 }}
                 className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20"
                 aria-label={social.ariaLabel}
-                target={social.href.startsWith('http') ? '_blank' : undefined}
-                rel={social.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                target={social.href.startsWith("http") ? "_blank" : undefined}
+                rel={
+                  social.href.startsWith("http")
+                    ? "noopener noreferrer"
+                    : undefined
+                }
               >
                 {social.icon}
               </motion.a>
@@ -357,7 +427,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Projects Section */}
-      <section 
+      <section
         ref={projectsRef}
         className="relative py-20 px-6"
         id="featured-projects"
@@ -375,18 +445,14 @@ export default function HomePage() {
               </span>
             </h2>
             <p className="text-gray-300 max-w-3xl mx-auto">
-              Uma seleção dos meus projetos mais recentes e relevantes. Cada projeto representa
-              uma solução única para um problema específico.
+              Uma seleção dos meus projetos mais recentes e relevantes. Cada
+              projeto representa uma solução única para um problema específico.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProjects.map((project, index) => (
-              <FeaturedProject 
-                key={index}
-                {...project}
-                delay={index * 0.1}
-              />
+              <FeaturedProject key={index} {...project} delay={index * 0.1} />
             ))}
           </div>
 
@@ -410,7 +476,7 @@ export default function HomePage() {
       </section>
 
       {/* Key Skills Section */}
-      <section 
+      <section
         ref={skillsRef}
         className="relative py-20 px-6 bg-black/20"
         id="skills"
@@ -428,17 +494,14 @@ export default function HomePage() {
               </span>
             </h2>
             <p className="text-gray-300 max-w-3xl mx-auto">
-              Tecnologias e ferramentas que domino para criar soluções digitais completas e eficientes.
+              Tecnologias e ferramentas que domino para criar soluções digitais
+              completas e eficientes.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {keySkills.map((skill, index) => (
-              <SkillCard 
-                key={index}
-                {...skill}
-                delay={index * 0.1}
-              />
+              <SkillCard key={index} {...skill} delay={index * 0.1} />
             ))}
           </div>
 
@@ -462,11 +525,7 @@ export default function HomePage() {
       </section>
 
       {/* Statistics */}
-      <section 
-        ref={statsRef}
-        className="relative py-20 px-6"
-        id="stats"
-      >
+      <section ref={statsRef} className="relative py-20 px-6" id="stats">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -497,9 +556,7 @@ export default function HomePage() {
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
                   {stat.value}
                 </div>
-                <div className="text-gray-400 text-sm">
-                  {stat.label}
-                </div>
+                <div className="text-gray-400 text-sm">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -522,7 +579,7 @@ export default function HomePage() {
               Vamos Trabalhar Juntos?
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Estou sempre aberto a novos projetos e oportunidades desafiadoras. 
+              Estou sempre aberto a novos projetos e oportunidades desafiadoras.
               Entre em contato para discutirmos sua ideia!
             </p>
             <Link href="/contact">
