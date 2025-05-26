@@ -1,5 +1,6 @@
 // src/services/SocketService.ts - Sistema WebSocket Avançado
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { BaseService } from './BaseService';
 import { RedisService } from './RedisService';
 import { LoggerService } from './LoggerService';
 import { AuthService } from './AuthService';
@@ -24,53 +25,57 @@ interface SocketUser {
   };
 }
 
-export class SocketService {
+export class SocketService extends BaseService {
+  private static instance: SocketService;
   private io: SocketIOServer;
-  private redis: RedisService;
-  private logger: LoggerService;
   private authService: AuthService;
   private analyticsService: AnalyticsService;
   private notificationService: NotificationService;
   private connectedUsers: Map<string, SocketUser> = new Map();
   private userSessions: Map<string, Set<string>> = new Map();
 
-  constructor(io: SocketIOServer) {
+  private constructor(io: SocketIOServer) {
+    super();
     this.io = io;
-    this.redis = RedisService.getInstance();
-    this.logger = LoggerService.getInstance();
     this.authService = AuthService.getInstance();
     this.analyticsService = AnalyticsService.getInstance();
     this.notificationService = NotificationService.getInstance();
   }
 
+  public static getInstance(io?: SocketIOServer): SocketService {
+    if (!SocketService.instance && io) {
+      SocketService.instance = new SocketService(io);
+    }
+    return SocketService.instance;
+  }
+
   public initialize(): void {
     this.io.use(this.authenticationMiddleware.bind(this));
-    
+    this.setupEventHandlers();
+    this.startRealTimeDataBroadcast();
+    this.logger.info('WebSocket service initialized');
+  }
+
+  private setupEventHandlers(): void {
     this.io.on('connection', (socket: Socket) => {
       this.handleConnection(socket);
-      
-      // Event handlers
-      socket.on('authenticate', (data) => this.handleAuthentication(socket, data));
-      socket.on('join_room', (data) => this.handleJoinRoom(socket, data));
-      socket.on('leave_room', (data) => this.handleLeaveRoom(socket, data));
-      socket.on('admin_dashboard_subscribe', () => this.handleAdminDashboardSubscribe(socket));
-      socket.on('project_view', (data) => this.handleProjectView(socket, data));
-      socket.on('real_time_analytics', () => this.handleRealTimeAnalytics(socket));
-      socket.on('user_activity', (data) => this.handleUserActivity(socket, data));
-      socket.on('disconnect', () => this.handleDisconnection(socket));
-      
-      // Error handling
-      socket.on('error', (error) => {
-        this.logger.error('Socket error:', error);
-      });
+      this.setupSocketEvents(socket);
     });
+  }
 
-    // Broadcast real-time data every 10 seconds
-    setInterval(() => {
-      this.broadcastRealTimeData();
-    }, 10000);
+  private setupSocketEvents(socket: Socket): void {
+    socket.on('authenticate', (data) => this.handleAuthentication(socket, data));
+    socket.on('join_room', (data) => this.handleJoinRoom(socket, data));
+    socket.on('leave_room', (data) => this.handleLeaveRoom(socket, data));
+    socket.on('admin_dashboard_subscribe', () => this.handleAdminDashboardSubscribe(socket));
+    socket.on('project_view', (data) => this.handleProjectView(socket, data));
+    socket.on('user_activity', (data) => this.handleUserActivity(socket, data));
+    socket.on('disconnect', () => this.handleDisconnection(socket));
+    socket.on('error', (error) => this.handleError(socket, error));
+  }
 
-    this.logger.info('WebSocket service initialized');
+  private startRealTimeDataBroadcast(): void {
+    setInterval(() => this.broadcastRealTimeData(), 10000);
   }
 
   private async authenticationMiddleware(socket: Socket, next: Function): Promise<void> {
@@ -94,6 +99,22 @@ export class SocketService {
   }
 
   private async handleConnection(socket: Socket): Promise<void> {
+    const socketUser = await this.createSocketUser(socket);
+    await this.registerUserConnection(socket, socketUser);
+    this.sendWelcomeMessage(socket);
+  }
+
+  private async registerUserConnection(socket: Socket, socketUser: SocketUser): Promise<void> {
+    this.connectedUsers.set(socket.id, socketUser);
+    
+    if (socketUser.userId) {
+      this.setupUserSessions(socket, socketUser.userId);
+      await this.cacheUserConnection(socket.id, socketUser);
+      await this.trackConnectionAnalytics(socketUser);
+    }
+  }
+
+  private async createSocketUser(socket: Socket): Promise<SocketUser> {
     const userAgent = socket.handshake.headers['user-agent'] || '';
     const ipAddress = socket.handshake.address;
     
@@ -149,17 +170,7 @@ export class SocketService {
       timestamp: new Date()
     });
 
-    // Send welcome message
-    socket.emit('connection_established', {
-      socketId: socket.id,
-      serverTime: new Date().toISOString(),
-      connectedUsers: this.getPublicUserCount()
-    });
-
-    this.logger.info(`Socket connected: ${socket.id}`, {
-      userId: socketUser.userId,
-      isAuthenticated: socketUser.isAuthenticated
-    });
+    return socketUser;
   }
 
   private async handleAuthentication(socket: Socket, data: any): Promise<void> {
@@ -356,17 +367,14 @@ export class SocketService {
 
   private async broadcastRealTimeData(): Promise<void> {
     try {
-      // Broadcast to admin dashboard
-      const dashboardData = await this.getDashboardData();
+      const [dashboardData, analytics] = await Promise.all([
+        this.getDashboardData(),
+        this.analyticsService.getRealTimeMetrics()
+      ]);
+
       this.io.to('admin_dashboard').emit('dashboard_update', dashboardData);
-      
-      // Broadcast analytics to admins
-      const analytics = await this.analyticsService.getRealTimeMetrics();
       this.io.to('admins').emit('real_time_analytics', analytics);
-      
-      // Broadcast active user count to public
       this.io.emit('active_users_count', this.getPublicUserCount());
-      
     } catch (error) {
       this.logger.error('Error broadcasting real-time data:', error);
     }
@@ -403,13 +411,5 @@ export class SocketService {
 
   public async broadcastToAdmins(event: string, data: any): Promise<void> {
     this.io.to('admins').emit(event, data);
-  }
-
-  public getConnectedUsers(): SocketUser[] {
-    return Array.from(this.connectedUsers.values());
-  }
-
-  public getUserConnections(userId: string): number {
-    return this.userSessions.get(userId)?.size || 0;
   }
 }

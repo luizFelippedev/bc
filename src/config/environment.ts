@@ -1,99 +1,82 @@
 // src/config/environment.ts - Configuração Empresarial
-export const config = {
-  port: parseInt(process.env.PORT || '5000'),
+import { ConnectOptions } from 'mongoose';
+
+export interface AppConfig {
+  port: number;
+  environment: string;
+  database: {
+    mongodb: {
+      uri: string;
+      options: ConnectOptions;
+    };
+    redis: {
+      host: string;
+      port: number;
+      password?: string;
+    };
+  };
+  cors: {
+    origins: string[];
+    methods: string[];
+    allowedHeaders: string[];
+    credentials: boolean;
+  };
+  jwt: {
+    secret: string;
+    expiresIn: string;
+    refreshToken: {
+      secret: string;
+      expiresIn: string;
+    };
+  };
+  uploads: {
+    path: string;
+    maxSize: number;
+    allowedTypes: string[];
+  };
+}
+
+export const config: AppConfig = {
+  port: parseInt(process.env.PORT || '5001'),
   environment: process.env.NODE_ENV || 'development',
   
   database: {
     mongodb: {
-      uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio_enterprise',
+      uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio',
       options: {
-        maxPoolSize: 50,
-        minPoolSize: 5,
-        maxIdleTimeMS: 30000,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        bufferMaxEntries: 0,
-        retryWrites: true,
-        w: 'majority'
       }
     },
-    postgresql: {
-      host: process.env.PG_HOST || 'localhost',
-      port: parseInt(process.env.PG_PORT || '5432'),
-      database: process.env.PG_DATABASE || 'portfolio_enterprise',
-      username: process.env.PG_USERNAME || 'postgres',
-      password: process.env.PG_PASSWORD || 'password',
-      pool: {
-        min: 5,
-        max: 50,
-        acquire: 30000,
-        idle: 10000
-      }
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD
     }
-  },
-
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
-    lazyConnect: true
-  },
-
-  jwt: {
-    secret: process.env.JWT_SECRET || 'enterprise-portfolio-secret-key',
-    expiresIn: '24h',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'refresh-secret-key',
-    refreshExpiresIn: '7d'
   },
 
   cors: {
     origins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
   },
 
-  rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000 // requests per windowMs
-  },
-
-  upload: {
-    maxFileSize: '50mb',
-    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-    cloudinary: {
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY,
-      apiSecret: process.env.CLOUDINARY_API_SECRET
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-secret-key',
+    expiresIn: '1h',
+    refreshToken: {
+      secret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret',
+      expiresIn: '7d'
     }
   },
 
-  email: {
-    smtp: {
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    },
-    from: process.env.EMAIL_FROM || 'noreply@portfolio.com'
-  },
-
-  analytics: {
-    googleAnalytics: process.env.GA_TRACKING_ID,
-    mixpanel: process.env.MIXPANEL_TOKEN
-  },
-
-  logging: {
-    level: process.env.LOG_LEVEL || 'info',
-    file: {
-      enabled: true,
-      filename: 'logs/portfolio-enterprise.log',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5
-    }
+  uploads: {
+    path: 'uploads',
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
   }
 };

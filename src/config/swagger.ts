@@ -1,25 +1,25 @@
 // src/config/swagger.ts - API Documentation
 import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
+import { config } from './environment';
 
 const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Portfolio Professional API',
+      title: 'Portfolio API Documentation',
       version: '1.0.0',
-      description: 'Advanced Portfolio Management System API',
+      description: 'API Documentation for Portfolio Backend',
       contact: {
-        name: 'Developer',
-        email: 'developer@portfolio.com'
+        name: 'API Support',
+        email: 'support@portfolio.com'
       }
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production' 
-          ? 'https://api.yourportfolio.com' 
-          : 'http://localhost:5000',
-        description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development'
+        url: config.environment === 'production' 
+          ? 'https://api.portfolio.com' 
+          : `http://localhost:${config.port}`,
+        description: config.environment === 'production' ? 'Production' : 'Development'
       }
     ],
     components: {
@@ -30,10 +30,12 @@ const options = {
           bearerFormat: 'JWT'
         }
       }
-    }
+    },
+    security: [{
+      bearerAuth: []
+    }]
   },
   apis: ['./src/routes/*.ts', './src/models/*.ts']
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-export { swaggerUi };

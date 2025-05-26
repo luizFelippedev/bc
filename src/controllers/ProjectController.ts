@@ -1,24 +1,20 @@
 // src/controllers/ProjectController.ts - Controlador Avançado de Projetos
 import { Request, Response, NextFunction } from 'express';
-import { Project, IProject } from '../models/Project';
+import { Project } from '../models/Project';
 import { CacheService } from '../services/CacheService';
-import { AnalyticsService } from '../services/AnalyticsService';
 import { SearchService } from '../services/SearchService';
 import { FileUploadService } from '../services/FileUploadService';
 import { LoggerService } from '../services/LoggerService';
 import { ApiResponse } from '../utils/ApiResponse';
-import { PaginationService } from '../services/PaginationService';
 
 export class ProjectController {
   private cacheService: CacheService;
-  private analyticsService: AnalyticsService;
   private searchService: SearchService;
   private uploadService: FileUploadService;
   private logger: LoggerService;
 
   constructor() {
     this.cacheService = CacheService.getInstance();
-    this.analyticsService = AnalyticsService.getInstance();
     this.searchService = SearchService.getInstance();
     this.uploadService = FileUploadService.getInstance();
     this.logger = LoggerService.getInstance();
@@ -26,6 +22,14 @@ export class ProjectController {
 
   public async getAllProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const cacheKey = `projects:list:${JSON.stringify(req.query)}`;
+      const cachedData = await this.cacheService.get(cacheKey);
+
+      if (cachedData) {
+        res.json(ApiResponse.success(cachedData));
+        return;
+      }
+
       const {
         page = 1,
         limit = 12,
@@ -38,21 +42,6 @@ export class ProjectController {
         sortOrder = 'desc',
         visibility = 'public'
       } = req.query;
-
-      const cacheKey = `projects:list:${JSON.stringify(req.query)}`;
-      const cachedData = await this.cacheService.get(cacheKey);
-
-      if (cachedData) {
-        await this.analyticsService.trackEvent({
-          type: 'projects_list_view_cached',
-          sessionId: req.sessionID,
-          data: { query: req.query },
-          timestamp: new Date()
-        });
-        
-        res.json(ApiResponse.success(cachedData, 'Projects retrieved from cache'));
-        return;
-      }
 
       // Construir filtros
       const filters: any = { isActive: true, visibility };
@@ -83,11 +72,12 @@ export class ProjectController {
         .lean();
 
       const total = await Project.countDocuments(filters);
-      const pagination = PaginationService.getPaginationData(
-        Number(page),
-        Number(limit),
-        total
-      );
+      const pagination = {
+        page: Number(page),
+        limit: Number(limit),
+        total: total,
+        totalPages: Math.ceil(total / Number(limit))
+      };
 
       const result = {
         projects: projects.map(this.sanitizeProject),
@@ -99,20 +89,7 @@ export class ProjectController {
         }
       };
 
-      // Cache por 5 minutos
-      await this.cacheService.set(cacheKey, result, 300);
-
-      // Analytics
-      await this.analyticsService.trackEvent({
-        type: 'projects_list_view',
-        sessionId: req.sessionID,
-        data: { 
-          query: req.query,
-          resultCount: projects.length
-        },
-        timestamp: new Date()
-      });
-
+      await this.cacheService.set(cacheKey, result, 300); // 5 minutes
       res.json(ApiResponse.success(result));
     } catch (error) {
       this.logger.error('Error getting projects:', error);
@@ -146,18 +123,6 @@ export class ProjectController {
         { $inc: { 'analytics.views': 1 } }
       );
 
-      // Analytics
-      await this.analyticsService.trackEvent({
-        type: 'project_view',
-        sessionId: req.sessionID,
-        data: { 
-          projectId: project._id,
-          slug: project.slug,
-          category: project.category
-        },
-        timestamp: new Date()
-      });
-
       // Projetos relacionados
       const relatedProjects = await this.getRelatedProjects(project);
 
@@ -171,6 +136,7 @@ export class ProjectController {
     }
   }
 
+  // Adicionar auditoria nas operações
   public async createProject(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const projectData = req.body;
@@ -275,30 +241,6 @@ export class ProjectController {
     }
   }
 
-  public async getProjectAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { startDate, endDate } = req.query;
-
-      const project = await Project.findById(id);
-      if (!project) {
-        res.status(404).json(ApiResponse.error('Project not found', 404));
-        return;
-      }
-
-      const analytics = await this.analyticsService.getProjectAnalytics(
-        id,
-        startDate as string,
-        endDate as string
-      );
-
-      res.json(ApiResponse.success(analytics));
-    } catch (error) {
-      this.logger.error('Error getting project analytics:', error);
-      next(error);
-    }
-  }
-
   private sanitizeProject(project: any): any {
     const sanitized = { ...project };
     // Remove campos sensíveis se necessário
@@ -361,3 +303,5 @@ export class ProjectController {
     return result;
   }
 }
+
+export const projectController = new ProjectController();

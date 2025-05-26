@@ -1,9 +1,8 @@
-// src/middlewares/auth.ts - JWT Authentication
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/environment';
-import { ApiError } from '../utils/ApiError';
 import { LoggerService } from '../services/LoggerService';
+import { ApiError } from './errorHandler';
 
 const logger = LoggerService.getInstance();
 
@@ -20,8 +19,8 @@ declare global {
   }
 }
 
-export class AuthMiddleware {
-  static authenticate(req: Request, res: Response, next: NextFunction) {
+export const authMiddleware = {
+  authenticate: (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.headers.authorization?.split(' ')[1];
 
@@ -36,9 +35,9 @@ export class AuthMiddleware {
       logger.error('Erro na autenticação:', error);
       next(ApiError.unauthorized('Token inválido'));
     }
-  }
+  },
 
-  static authorize(roles: string[]) {
+  authorize: (roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
       if (!req.user || !roles.includes(req.user.role)) {
         return next(ApiError.forbidden('Acesso negado'));
@@ -46,4 +45,4 @@ export class AuthMiddleware {
       next();
     };
   }
-}
+};

@@ -1,39 +1,83 @@
 // src/app.ts - Arquivo principal de inicialização
-import { PortfolioServer } from './server';
-import { BackupService } from './services/BackupService';
+import express, { Application } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { config } from './config/environment';
+import { DatabaseService } from './services/DatabaseService';
 import { LoggerService } from './services/LoggerService';
+import { errorHandler } from './middleware/errorHandler';
+import { setupRoutes } from './routes';
+import { setupMiddlewares } from '@/middlewares';
 
-const logger = LoggerService.getInstance();
+export class App {
+  private app: Application;
+  private server: any;
+  private io: SocketIOServer;
+  private logger = LoggerService.getInstance();
+  private database = DatabaseService.getInstance();
 
-async function bootstrap() {
-  try {
-    // Iniciar servidor
-    const server = new PortfolioServer();
-    await server.start();
+  constructor() {
+    this.app = express();
+    this.server = createServer(this.app);
+    this.setupServer();
+  }
 
-    // Configurar backups automáticos
-    const backupService = BackupService.getInstance();
-    await backupService.scheduleBackups();
+  private setupServer(): void {
+    this.setupSocketIO();
+    this.setupMiddlewares();
+    this.setupRoutes();
+    this.setupErrorHandling();
+  }
 
-    logger.info('🎉 Portfolio Enterprise Backend started successfully');
-    
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      logger.info('Received SIGTERM signal. Shutting down gracefully...');
-      await server.shutdown();
-      process.exit(0);
+  private setupSocketIO(): void {
+    this.io = new SocketIOServer(this.server, {
+      cors: {
+        origin: config.cors.origins,
+        credentials: true
+      }
     });
+  }
 
-    process.on('SIGINT', async () => {
-      logger.info('Received SIGINT signal. Shutting down gracefully...');
-      await server.shutdown();
-      process.exit(0);
-    });
+  private setupMiddlewares(): void {
+    setupMiddlewares(this.app);
+  }
 
-  } catch (error) {
-    logger.error('Failed to start application:', error);
-    process.exit(1);
+  private setupRoutes(): void {
+    setupRoutes(this.app);
+  }
+
+  private setupErrorHandling(): void {
+    this.app.use(errorHandler);
+  }
+
+  public async start(): Promise<void> {
+    try {
+      await this.database.connect();
+      
+      this.server.listen(config.port, () => {
+        this.logger.info(`🚀 Server running on port ${config.port}`);
+        this.logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
+      });
+    } catch (error) {
+      this.logger.error('Failed to start server:', error);
+      throw error;
+    }
+  }
+
+  public async shutdown(): Promise<void> {
+    try {
+      await this.database.disconnect();
+      this.server.close();
+      this.logger.info('Server shutdown completed');
+    } catch (error) {
+      this.logger.error('Error during shutdown:', error);
+      throw error;
+    }
   }
 }
 
-bootstrap();
+const app = new App();
+app.start();

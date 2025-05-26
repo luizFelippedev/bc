@@ -10,7 +10,7 @@ import { LoggerService } from '../services/LoggerService';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Certificate } from '../models/Certificate';
-import { ApiResponse } from '../utils/ApiResponse';
+import { ApiResponse } from '@/utils/ApiResponse';
 
 export class AdminController {
   private analyticsService: AnalyticsService;
