@@ -86,3 +86,15 @@ export class CacheService {
     }
   }
 }
+  /**
+   * Verificar se Redis está saudável
+   */
+  public async isHealthy(): Promise<boolean> {
+    try {
+      const response = await this.client.ping();
+      return response === 'PONG';
+    } catch (error) {
+      this.logger.error('Redis health check failed:', error);
+      return false;
+    }
+  }
