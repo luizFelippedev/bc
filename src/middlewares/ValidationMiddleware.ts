@@ -5,6 +5,12 @@ import { LoggerService } from '../services/LoggerService';
 import { ApiError } from '../utils/ApiError';
 
 export class ValidationMiddleware {
+  static loginValidation(): import("express-serve-static-core").RequestHandler<{}, any, any, import("qs").ParsedQs, Record<string, any>> {
+      throw new Error('Method not implemented.');
+  }
+  static handleValidationErrors(arg0: string, arg1: any, handleValidationErrors: any, arg3: (req: Request, res: Response) => Promise<void>) {
+      throw new Error('Method not implemented.');
+  }
   private static logger = LoggerService.getInstance();
 
   /**

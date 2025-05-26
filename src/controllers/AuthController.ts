@@ -1,118 +1,117 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
-import { config } from '../config/environment';
-import { LoggerService } from '../services/LoggerService';
 import { ApiResponse } from '../utils/ApiResponse';
+import { LoggerService } from '../services/LoggerService';
 
 export class AuthController {
   private logger = LoggerService.getInstance();
+    refreshToken: any;
 
-  async login(req: Request, res: Response) {
+  /**
+   * Login de administrador
+   * POST /api/auth/login
+   */
+  public async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      const user = await User.findOne({ email });
-
-      if (!user || !await user.comparePassword(password)) {
-        return res.status(401).json(
+      
+      // Buscar usuário pelo email
+      const user = await User.findOne({ email, isActive: true });
+      
+      if (!user || !(await user.comparePassword(password))) {
+        res.status(401).json(
           ApiResponse.error('Credenciais inválidas', 401)
         );
+        return;
       }
-
-      const token = this.generateTokens(user);
       
-      res.json(ApiResponse.success({
-        token: token.accessToken,
-        refreshToken: token.refreshToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }));
+      // Verificar se é admin
+      if (user.role !== 'admin') {
+        res.status(403).json(
+          ApiResponse.error('Acesso restrito apenas para administradores', 403)
+        );
+        return;
+      }
+      
+      // Gerar token JWT
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET || 'sua-chave-secreta',
+        { expiresIn: '8h' }
+      );
+      
+      // Atualizar último login
+      user.lastLogin = new Date();
+      await user.save();
+      
+      res.json(
+        ApiResponse.success({
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role
+          },
+          token
+        })
+      );
+      
+      this.logger.info(`Admin login: ${user.email}`);
     } catch (error) {
       this.logger.error('Erro no login:', error);
       res.status(500).json(
-        ApiResponse.error('Erro interno do servidor', 500)
+        ApiResponse.error('Erro ao processar login', 500)
       );
     }
   }
 
-  async refreshToken(req: Request, res: Response) {
+  /**
+   * Verificar token JWT
+   * GET /api/auth/verify
+   */
+  public async verifyToken(req: Request, res: Response): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      // req.user é definido pelo middleware de autenticação
+      const user = await User.findById(req.user?.id).select('-password');
       
-      if (!refreshToken) {
-        return res.status(400).json(
-          ApiResponse.error('Refresh token não fornecido', 400)
+      if (!user || !user.isActive) {
+        res.status(401).json(
+          ApiResponse.error('Token inválido ou usuário inativo', 401)
         );
+        return;
       }
-
-      const decoded = jwt.verify(refreshToken, config.jwt.refreshToken.secret) as { id: string };
-      const user = await User.findById(decoded.id);
-
-      if (!user) {
-        return res.status(401).json(
-          ApiResponse.error('Usuário não encontrado', 401)
-        );
-      }
-
-      const tokens = this.generateTokens(user);
-
-      res.json(ApiResponse.success({ tokens }));
+      
+      res.json(
+        ApiResponse.success({ user })
+      );
     } catch (error) {
-      this.logger.error('Erro ao renovar token:', error);
-      res.status(401).json(
-        ApiResponse.error('Refresh token inválido', 401)
+      this.logger.error('Erro na verificação do token:', error);
+      res.status(500).json(
+        ApiResponse.error('Erro ao verificar token', 500)
       );
     }
   }
 
-  async logout(req: Request, res: Response) {
+  /**
+   * Logout (invalidação do token no cliente)
+   * POST /api/auth/logout
+   */
+  public async logout(req: Request, res: Response): Promise<void> {
     try {
-      // Implemente a lógica de logout aqui
-      // Por exemplo, invalidar o refreshToken
-      res.json(ApiResponse.success(null, 'Logout realizado com sucesso'));
+      // No frontend, o token será removido do localStorage
+      res.json(
+        ApiResponse.success(null, 'Logout realizado com sucesso')
+      );
+      
+      this.logger.info(`Admin logout: ${req.user?.id}`);
     } catch (error) {
       this.logger.error('Erro no logout:', error);
       res.status(500).json(
-        ApiResponse.error('Erro ao realizar logout', 500)
+        ApiResponse.error('Erro ao processar logout', 500)
       );
     }
-  }
-
-  async verifyToken(req: Request, res: Response) {
-    try {
-      const user = await User.findById(req.user?.id).select('-password');
-      if (!user) {
-        return res.status(401).json(
-          ApiResponse.error('Usuário não encontrado', 401)
-        );
-      }
-      res.json(ApiResponse.success({ user }));
-    } catch (error) {
-      this.logger.error('Erro na verificação do token:', error);
-      res.status(401).json(
-        ApiResponse.error('Token inválido', 401)
-      );
-    }
-  }
-
-  private generateTokens(user: any) {
-    const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
-      config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      config.jwt.refreshToken.secret,
-      { expiresIn: config.jwt.refreshToken.expiresIn }
-    );
-
-    return { accessToken, refreshToken };
   }
 }
 

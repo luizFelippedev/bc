@@ -1,221 +1,248 @@
-// src/controllers/CertificateController.ts - Controlador de Certificados
 import { Request, Response, NextFunction } from 'express';
-import { Certificate, ICertificate } from '../models/Certificate';
+import { Certificate } from '../models/Certificate';
+import { ApiResponse } from '../utils/ApiResponse';
+import { LoggerService } from '../services/LoggerService';
 import { CacheService } from '../services/CacheService';
 import { FileUploadService } from '../services/FileUploadService';
-import { LoggerService } from '../services/LoggerService';
-import { ApiResponse } from '../utils/ApiResponse';
-import { PaginationService } from '../services/PaginationService';
+import mongoose from 'mongoose';
 
 export class CertificateController {
-  private cacheService: CacheService;
-  private uploadService: FileUploadService;
-  private logger: LoggerService;
+  private logger = LoggerService.getInstance();
+  private cacheService = CacheService.getInstance();
+  private fileUploadService = FileUploadService.getInstance();
 
-  constructor() {
-    this.cacheService = CacheService.getInstance();
-    this.uploadService = FileUploadService.getInstance();
-    this.logger = LoggerService.getInstance();
-  }
-
+  /**
+   * Obter todos os certificados (admin)
+   * GET /api/admin/certificates
+   */
   public async getAllCertificates(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {
-        page = 1,
-        limit = 20,
-        type,
-        level,
-        featured,
+      const { 
+        page = 1, 
+        limit = 10, 
+        sort = 'date.issued', 
+        order = 'desc',
         search,
-        sortBy = 'dates.issued',
-        sortOrder = 'desc'
+        category,
+        featured
       } = req.query;
-
-      const cacheKey = `certificates:list:${JSON.stringify(req.query)}`;
-      const cachedData = await this.cacheService.get(cacheKey);
-
-      if (cachedData) {
-        res.json(ApiResponse.success(cachedData));
-        return;
-      }
-
-      // Construir filtros
-      const filters: any = { isActive: true };
       
-      if (type) filters.type = type;
-      if (level) filters.level = level;
-      if (featured !== undefined) filters.featured = featured === 'true';
+      // Construir filtros
+      const filters: any = {};
+      
       if (search) {
         filters.$or = [
           { title: { $regex: search, $options: 'i' } },
           { 'issuer.name': { $regex: search, $options: 'i' } },
-          { 'skills.name': { $regex: search, $options: 'i' } }
+          { skills: { $regex: search, $options: 'i' } }
         ];
       }
-
-      // Ordenação
-      const sortOptions: any = {};
-      sortOptions[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
-
+      
+      if (category) filters.category = category;
+      if (featured) filters.featured = featured === 'true';
+      
+      // Construir ordenação
+      const sortOption: any = {};
+      sortOption[sort as string] = order === 'asc' ? 1 : -1;
+      
+      // Executar consulta com paginação
       const certificates = await Certificate.find(filters)
-        .sort(sortOptions)
-        .limit(Number(limit))
+        .sort(sortOption)
         .skip((Number(page) - 1) * Number(limit))
-        .lean();
-
+        .limit(Number(limit));
+      
+      // Contar total
       const total = await Certificate.countDocuments(filters);
-      const pagination = PaginationService.getPaginationData(
-        Number(page),
-        Number(limit),
-        total
+      
+      res.json(
+        ApiResponse.success({
+          certificates,
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            pages: Math.ceil(total / Number(limit))
+          }
+        })
       );
-
-      const result = {
-        certificates: certificates.map(this.sanitizeCertificate),
-        pagination,
-        filters: {
-          types: await this.getAvailableTypes(),
-          levels: await this.getAvailableLevels(),
-          issuers: await this.getTopIssuers()
-        }
-      };
-
-      await this.cacheService.set(cacheKey, result, 600); // 10 minutos
-
-      res.json(ApiResponse.success(result));
     } catch (error) {
-      this.logger.error('Error getting certificates:', error);
+      this.logger.error('Erro ao buscar certificados:', error);
       next(error);
     }
   }
 
+  /**
+   * Obter certificado por ID
+   * GET /api/admin/certificates/:id
+   */
+  public async getCertificate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const certificate = await Certificate.findById(id);
+      
+      if (!certificate) {
+        res.status(404).json(
+          ApiResponse.error('Certificado não encontrado', 404)
+        );
+        return;
+      }
+      
+      res.json(
+        ApiResponse.success(certificate)
+      );
+    } catch (error) {
+      this.logger.error('Erro ao buscar certificado:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Criar novo certificado
+   * POST /api/admin/certificates
+   */
   public async createCertificate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const certificateData = req.body;
       
-      // Upload de arquivos se houver
-      if (req.files) {
-        const uploadResults = await this.uploadService.uploadMultiple(req.files as Express.Multer.File[]);
-        certificateData.media = {
-          ...certificateData.media,
-          ...this.processUploadResults(uploadResults)
-        };
+      // Processar upload de imagens se houver
+      if (req.file) {
+        const uploadResult = await this.fileUploadService.uploadSingle(req.file);
+        certificateData.image = uploadResult.url;
       }
-
+      
       const certificate = new Certificate(certificateData);
       await certificate.save();
-
+      
       // Invalidar cache
       await this.cacheService.deletePattern('certificates:*');
-
-      res.status(201).json(ApiResponse.success(
-        this.sanitizeCertificate(certificate.toObject()),
-        'Certificate created successfully'
-      ));
+      
+      res.status(201).json(
+        ApiResponse.success(certificate, 'Certificado criado com sucesso')
+      );
+      
+      this.logger.info(`Certificado criado: ${certificate.title} (${certificate._id})`);
     } catch (error) {
-      this.logger.error('Error creating certificate:', error);
+      this.logger.error('Erro ao criar certificado:', error);
       next(error);
     }
   }
 
+  /**
+   * Atualizar certificado
+   * PUT /api/admin/certificates/:id
+   */
   public async updateCertificate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const updateData = req.body;
-
-      // Upload de novos arquivos se houver
-      if (req.files) {
-        const uploadResults = await this.uploadService.uploadMultiple(req.files as Express.Multer.File[]);
-        updateData.media = {
-          ...updateData.media,
-          ...this.processUploadResults(uploadResults)
-        };
-      }
-
-      const certificate = await Certificate.findByIdAndUpdate(
-        id,
-        { ...updateData, updatedAt: new Date() },
-        { new: true, runValidators: true }
-      );
-
+      const certificateData = req.body;
+      
+      // Verificar se certificado existe
+      const certificate = await Certificate.findById(id);
+      
       if (!certificate) {
-        res.status(404).json(ApiResponse.error('Certificate not found', 404));
+        res.status(404).json(
+          ApiResponse.error('Certificado não encontrado', 404)
+        );
         return;
       }
-
+      
+      // Processar upload de imagens se houver
+      if (req.file) {
+        const uploadResult = await this.fileUploadService.uploadSingle(req.file);
+        certificateData.image = uploadResult.url;
+      }
+      
+      // Atualizar certificado
+      const updatedCertificate = await Certificate.findByIdAndUpdate(
+        id,
+        certificateData,
+        { new: true, runValidators: true }
+      );
+      
       // Invalidar cache
       await this.cacheService.deletePattern('certificates:*');
-
-      res.json(ApiResponse.success(
-        this.sanitizeCertificate(certificate.toObject()),
-        'Certificate updated successfully'
-      ));
+      
+      res.json(
+        ApiResponse.success(updatedCertificate, 'Certificado atualizado com sucesso')
+      );
+      
+      this.logger.info(`Certificado atualizado: ${certificate.title} (${certificate._id})`);
     } catch (error) {
-      this.logger.error('Error updating certificate:', error);
+      this.logger.error('Erro ao atualizar certificado:', error);
       next(error);
     }
   }
 
+  /**
+   * Excluir certificado
+   * DELETE /api/admin/certificates/:id
+   */
   public async deleteCertificate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-
-      const certificate = await Certificate.findByIdAndUpdate(
-        id,
-        { isActive: false, updatedAt: new Date() },
-        { new: true }
-      );
-
+      
+      const certificate = await Certificate.findById(id);
+      
       if (!certificate) {
-        res.status(404).json(ApiResponse.error('Certificate not found', 404));
+        res.status(404).json(
+          ApiResponse.error('Certificado não encontrado', 404)
+        );
         return;
       }
-
+      
+      // Exclusão lógica (alterando isActive para false)
+      certificate.isActive = false;
+      await certificate.save();
+      
+      // Ou exclusão física
+      // await Certificate.findByIdAndDelete(id);
+      
       // Invalidar cache
       await this.cacheService.deletePattern('certificates:*');
-
-      res.json(ApiResponse.success(null, 'Certificate deleted successfully'));
+      
+      res.json(
+        ApiResponse.success(null, 'Certificado excluído com sucesso')
+      );
+      
+      this.logger.info(`Certificado excluído: ${certificate.title} (${certificate._id})`);
     } catch (error) {
-      this.logger.error('Error deleting certificate:', error);
+      this.logger.error('Erro ao excluir certificado:', error);
       next(error);
     }
   }
 
-  private sanitizeCertificate(certificate: any): any {
-    return certificate;
-  }
-
-  private async getAvailableTypes(): Promise<string[]> {
-    return await Certificate.distinct('type', { isActive: true });
-  }
-
-  private async getAvailableLevels(): Promise<string[]> {
-    return await Certificate.distinct('level', { isActive: true });
-  }
-
-  private async getTopIssuers(): Promise<Array<{ name: string; count: number }>> {
-    const pipeline = [
-      { $match: { isActive: true } },
-      { $group: { _id: '$issuer.name', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-      { $project: { name: '$_id', count: 1, _id: 0 } }
-    ];
-
-    return await Certificate.aggregate(pipeline);
-  }
-
-  private processUploadResults(uploadResults: any[]): any {
-    const result: any = {};
-    
-    uploadResults.forEach(upload => {
-      if (upload.fieldname === 'certificate') {
-        result.certificate = upload.url;
-      } else if (upload.fieldname === 'badge') {
-        result.badge = upload.url;
+  /**
+   * Alternar status de destaque (featured)
+   * PATCH /api/admin/certificates/:id/featured
+   */
+  public async toggleFeatured(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const certificate = await Certificate.findById(id);
+      
+      if (!certificate) {
+        res.status(404).json(
+          ApiResponse.error('Certificado não encontrado', 404)
+        );
+        return;
       }
-    });
-
-    return result;
+      
+      certificate.featured = !certificate.featured;
+      await certificate.save();
+      
+      // Invalidar cache
+      await this.cacheService.deletePattern('certificates:*');
+      
+      res.json(
+        ApiResponse.success({ featured: certificate.featured }, 'Status de destaque atualizado')
+      );
+    } catch (error) {
+      this.logger.error('Erro ao alternar status de destaque:', error);
+      next(error);
+    }
   }
 }
+
+export const certificateController = new CertificateController();

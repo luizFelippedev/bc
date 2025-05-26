@@ -1,440 +1,196 @@
-// src/controllers/AdminController.ts - Controlador Administrativo Completo
 import { Request, Response, NextFunction } from 'express';
-import { AnalyticsService } from '../services/AnalyticsService';
-import { AuditService } from '../services/AuditService';
-import { BackupService } from '../services/BackupService';
-import { PerformanceMonitoringService } from '../services/PerformanceMonitoringService';
-import { NotificationService } from '../services/NotificationService';
-import { CacheService } from '../services/CacheService';
-import { LoggerService } from '../services/LoggerService';
-import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Certificate } from '../models/Certificate';
-import { ApiResponse } from '@/utils/ApiResponse';
+import { Analytics } from '../models/Analytics';
+import { ApiResponse } from '../utils/ApiResponse';
+import { LoggerService } from '../services/LoggerService';
+import { AnalyticsService } from '../services/AnalyticsService';
+import { CacheService } from '../services/CacheService';
+import mongoose from 'mongoose';
 
 export class AdminController {
-  private analyticsService: AnalyticsService;
-  private auditService: AuditService;
-  private backupService: BackupService;
-  private performanceService: PerformanceMonitoringService;
-  private notificationService: NotificationService;
-  private cacheService: CacheService;
-  private logger: LoggerService;
+  private logger = LoggerService.getInstance();
+  private analyticsService = AnalyticsService.getInstance();
+  private cacheService = CacheService.getInstance();
 
-  constructor() {
-    this.analyticsService = AnalyticsService.getInstance();
-    this.auditService = AuditService.getInstance();
-    this.backupService = BackupService.getInstance();
-    this.performanceService = PerformanceMonitoringService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-    this.cacheService = CacheService.getInstance();
-    this.logger = LoggerService.getInstance();
-  }
-
-  // Dashboard Principal
+  /**
+   * Obter dados do dashboard admin
+   * GET /api/admin/dashboard
+   */
   public async getDashboardData(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const cacheKey = 'admin:dashboard:overview';
       let dashboardData = await this.cacheService.get(cacheKey);
 
       if (!dashboardData) {
+        const now = new Date();
+        const today = new Date(now.setHours(0, 0, 0, 0));
+        const lastWeek = new Date(now.setDate(now.getDate() - 7));
+        const lastMonth = new Date(now.setMonth(now.getMonth() - 1));
+
         const [
-          totalProjects,
-          totalCertificates,
-          totalUsers,
-          recentAnalytics,
-          systemMetrics,
-          recentAuditLogs
+          projectsCount,
+          certificatesCount,
+          totalVisits,
+          visitsToday,
+          visitsLastWeek,
+          visitsLastMonth,
+          topProjects,
+          deviceStats,
+          geoStats
         ] = await Promise.all([
           Project.countDocuments({ isActive: true }),
           Certificate.countDocuments({ isActive: true }),
-          User.countDocuments({ isActive: true }),
-          this.analyticsService.getRealTimeMetrics(),
-          this.getSystemMetrics(),
-          this.auditService.getAuditLogs({ limit: 10 })
+          Analytics.countDocuments(),
+          Analytics.countDocuments({ createdAt: { $gte: today } }),
+          Analytics.countDocuments({ createdAt: { $gte: lastWeek } }),
+          Analytics.countDocuments({ createdAt: { $gte: lastMonth } }),
+          this.getTopProjects(),
+          this.getDeviceStats(),
+          this.getGeographicStats()
         ]);
 
         dashboardData = {
           overview: {
-            totalProjects,
-            totalCertificates,
-            totalUsers,
-            uptime: process.uptime()
+            projects: projectsCount,
+            certificates: certificatesCount,
+            totalVisits,
+            visitsToday,
+            visitsLastWeek,
+            visitsLastMonth,
+            lastUpdated: new Date()
           },
-          analytics: recentAnalytics,
-          systemMetrics,
-          recentActivity: recentAuditLogs.logs,
-          performance: await this.getPerformanceOverview()
+          topProjects,
+          deviceStats,
+          geoStats
         };
 
-        await this.cacheService.set(cacheKey, dashboardData, 300); // 5 minutos
+        // Cache por 5 minutos
+        await this.cacheService.set(cacheKey, dashboardData, 300);
       }
 
       res.json(ApiResponse.success(dashboardData));
     } catch (error) {
-      this.logger.error('Error getting dashboard data:', error);
+      this.logger.error('Erro ao obter dados do dashboard:', error);
       next(error);
     }
   }
 
-  // Métricas do Sistema
-  public async getSystemMetrics(req?: Request, res?: Response, next?: NextFunction): Promise<any> {
+  /**
+   * Obter estatísticas detalhadas
+   * GET /api/admin/analytics
+   */
+  public async getAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const memUsage = process.memoryUsage();
-      const cpuUsage = process.cpuUsage();
-      
-      const metrics = {
-        memory: {
-          used: Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100,
-          total: Math.round((memUsage.heapTotal / 1024 / 1024) * 100) / 100,
-          external: Math.round((memUsage.external / 1024 / 1024) * 100) / 100,
-          rss: Math.round((memUsage.rss / 1024 / 1024) * 100) / 100
-        },
-        cpu: {
-          user: cpuUsage.user,
-          system: cpuUsage.system
-        },
-        uptime: process.uptime(),
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch
-      };
-
-      if (res) {
-        res.json(ApiResponse.success(metrics));
-      } else {
-        return metrics;
-      }
-    } catch (error) {
-      this.logger.error('Error getting system metrics:', error);
-      if (next) next(error);
-      return null;
-    }
-  }
-
-  // Analytics Avançado
-  public async getAdvancedAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { startDate, endDate, granularity = 'day' } = req.query;
-      
-      const analytics = await this.analyticsService.getMetrics(
-        startDate as string || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        endDate as string || new Date().toISOString()
-      );
-
-      // Dados agregados por período
-      const aggregatedData = await this.getAggregatedAnalytics(
-        startDate as string,
-        endDate as string,
-        granularity as string
-      );
-
-      res.json(ApiResponse.success({
-        ...analytics,
-        aggregated: aggregatedData,
-        trends: await this.calculateTrends(analytics)
-      }));
-    } catch (error) {
-      this.logger.error('Error getting advanced analytics:', error);
-      next(error);
-    }
-  }
-
-  // Gerenciamento de Usuários
-  public async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { page = 1, limit = 20, search, role, status } = req.query;
+      const { startDate, endDate, type = 'all' } = req.query;
       
       const filters: any = {};
-      if (search) {
-        filters.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ];
-      }
-      if (role) filters.role = role;
-      if (status) filters.isActive = status === 'active';
-
-      const users = await User.find(filters)
-        .select('-password')
-        .sort({ createdAt: -1 })
-        .limit(Number(limit))
-        .skip((Number(page) - 1) * Number(limit))
-        .lean();
-
-      const total = await User.countDocuments(filters);
-
-      res.json(ApiResponse.paginated(users, {
-        currentPage: Number(page),
-        totalPages: Math.ceil(total / Number(limit)),
-        totalItems: total,
-        itemsPerPage: Number(limit)
-      }));
-    } catch (error) {
-      this.logger.error('Error getting users:', error);
-      next(error);
-    }
-  }
-
-  public async updateUserRole(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { userId } = req.params;
-      const { role } = req.body;
-
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { role, updatedAt: new Date() },
-        { new: true, select: '-password' }
-      );
-
-      if (!user) {
-        res.status(404).json(ApiResponse.error('User not found', 404));
-        return;
-      }
-
-      // Audit log
-      await this.auditService.log({
-        userId: req.user.id,
-        sessionId: req.sessionID,
-        action: 'user_role_update',
-        resource: 'user',
-        resourceId: userId,
-        details: { newRole: role },
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent') || '',
-        success: true
-      });
-
-      res.json(ApiResponse.success(user, 'User role updated successfully'));
-    } catch (error) {
-      this.logger.error('Error updating user role:', error);
-      next(error);
-    }
-  }
-
-  // Logs de Auditoria
-  public async getAuditLogs(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const {
-        page = 1,
-        limit = 50,
-        userId,
-        resource,
-        action,
-        startDate,
-        endDate
-      } = req.query;
-
-      const filters: any = {};
-      if (userId) filters.userId = userId;
-      if (resource) filters.resource = resource;
-      if (action) filters.action = action;
-      if (startDate || endDate) {
-        filters.timestamp = {};
-        if (startDate) filters.timestamp.$gte = new Date(startDate as string);
-        if (endDate) filters.timestamp.$lte = new Date(endDate as string);
-      }
-
-      const { logs, total } = await this.auditService.getAuditLogs({
-        ...filters,
-        page: Number(page),
-        limit: Number(limit)
-      });
-
-      res.json(ApiResponse.paginated(logs, {
-        currentPage: Number(page),
-        totalPages: Math.ceil(total / Number(limit)),
-        totalItems: total,
-        itemsPerPage: Number(limit)
-      }));
-    } catch (error) {
-      this.logger.error('Error getting audit logs:', error);
-      next(error);
-    }
-  }
-
-  // Backup e Restore
-  public async createBackup(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // Executar backup em background
-      this.backupService.createFullBackup().catch(error => {
-        this.logger.error('Backup failed:', error);
-      });
-
-      // Notificar administradores
-      await this.notificationService.sendNotification({
-        type: 'info',
-        title: 'Backup Iniciado',
-        message: 'Backup completo do sistema foi iniciado.',
-        recipients: ['admin'],
-        channels: ['socket'],
-        priority: 'normal'
-      });
-
-      res.json(ApiResponse.success(null, 'Backup initiated successfully'));
-    } catch (error) {
-      this.logger.error('Error initiating backup:', error);
-      next(error);
-    }
-  }
-
-  // Performance Monitoring
-  public async getPerformanceMetrics(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { metric, timeframe = 'hour' } = req.query;
       
-      if (metric) {
-        const data = await this.performanceService.getAggregatedMetrics(
-          metric as string,
-          timeframe as 'hour' | 'day' | 'week'
-        );
-        res.json(ApiResponse.success(data));
-      } else {
-        const overview = await this.getPerformanceOverview();
-        res.json(ApiResponse.success(overview));
+      if (startDate) {
+        filters.createdAt = { $gte: new Date(startDate as string) };
       }
-    } catch (error) {
-      this.logger.error('Error getting performance metrics:', error);
-      next(error);
-    }
-  }
-
-  // Cache Management
-  public async clearCache(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { pattern } = req.body;
       
-      if (pattern) {
-        await this.cacheService.deletePattern(pattern);
-      } else {
-        await this.cacheService.flushAll();
+      if (endDate) {
+        if (!filters.createdAt) filters.createdAt = {};
+        filters.createdAt.$lte = new Date(endDate as string);
       }
-
-      // Audit log
-      await this.auditService.log({
-        userId: req.user.id,
-        sessionId: req.sessionID,
-        action: 'cache_clear',
-        resource: 'system',
-        details: { pattern: pattern || 'all' },
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent') || '',
-        success: true
-      });
-
-      res.json(ApiResponse.success(null, 'Cache cleared successfully'));
+      
+      if (type && type !== 'all') {
+        filters.eventType = type;
+      }
+      
+      const analyticsData = await this.analyticsService.getDetailedStats(filters);
+      
+      res.json(ApiResponse.success(analyticsData));
     } catch (error) {
-      this.logger.error('Error clearing cache:', error);
+      this.logger.error('Erro ao obter analytics:', error);
       next(error);
     }
   }
 
-  // Configurações do Sistema
-  public async getSystemConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /**
+   * Estatísticas em tempo real
+   * GET /api/admin/realtime
+   */
+  public async getRealTimeStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const config = {
-        environment: process.env.NODE_ENV,
-        version: process.env.npm_package_version,
-        features: {
-          analytics: true,
-          backups: true,
-          notifications: true,
-          search: !!process.env.ELASTICSEARCH_URL
-        },
-        limits: {
-          uploadSize: process.env.MAX_FILE_SIZE || '50MB',
-          rateLimit: process.env.RATE_LIMIT_MAX || '1000'
+      const realTimeData = await this.analyticsService.getRealTimeStats();
+      
+      res.json(ApiResponse.success(realTimeData));
+    } catch (error) {
+      this.logger.error('Erro ao obter estatísticas em tempo real:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Métodos auxiliares
+   */
+  private async getTopProjects(): Promise<any[]> {
+    const topProjects = await Analytics.aggregate([
+      { $match: { eventType: 'project_view', projectId: { $exists: true } } },
+      { $group: { _id: '$projectId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'project'
         }
-      };
-
-      res.json(ApiResponse.success(config));
-    } catch (error) {
-      this.logger.error('Error getting system config:', error);
-      next(error);
-    }
-  }
-
-  public async updateSystemConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { settings } = req.body;
-      
-      // Validar e aplicar configurações
-      // (implementação específica dependeria dos settings disponíveis)
-      
-      // Audit log
-      await this.auditService.log({
-        userId: req.user.id,
-        sessionId: req.sessionID,
-        action: 'system_config_update',
-        resource: 'system',
-        details: settings,
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent') || '',
-        success: true
-      });
-
-      res.json(ApiResponse.success(null, 'System configuration updated'));
-    } catch (error) {
-      this.logger.error('Error updating system config:', error);
-      next(error);
-    }
-  }
-
-  // Métodos auxiliares
-  private async getAggregatedAnalytics(startDate?: string, endDate?: string, granularity?: string): Promise<any> {
-    // Implementar agregação de dados por período
-    return {
-      pageViewsByDay: [],
-      projectViewsByCategory: [],
-      geographicDistribution: [],
-      deviceBreakdown: []
-    };
-  }
-
-  private async calculateTrends(analytics: any): Promise<any> {
-    // Calcular tendências e comparações
-    return {
-      pageViewsTrend: 'up',
-      uniqueVisitorsTrend: 'up',
-      projectViewsTrend: 'stable',
-      conversionTrend: 'up'
-    };
-  }
-
-  private async getPerformanceOverview(): Promise<any> {
-    const [
-      requestDuration,
-      memoryUsage,
-      cpuUsage
-    ] = await Promise.all([
-      this.performanceService.getAggregatedMetrics('request_duration', 'hour'),
-      this.performanceService.getAggregatedMetrics('memory_heap_used', 'hour'),
-      this.performanceService.getAggregatedMetrics('cpu_user', 'hour')
+      },
+      { $unwind: '$project' },
+      {
+        $project: {
+          _id: 0,
+          id: '$project._id',
+          title: '$project.title',
+          slug: '$project.slug',
+          views: '$count'
+        }
+      }
     ]);
+    
+    return topProjects;
+  }
 
+  private async getDeviceStats(): Promise<any> {
+    const devices = await Analytics.aggregate([
+      { $group: { _id: '$device', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    
+    const browsers = await Analytics.aggregate([
+      { $group: { _id: '$browser', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+    
+    const os = await Analytics.aggregate([
+      { $group: { _id: '$os', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+    
     return {
-      requests: requestDuration,
-      memory: memoryUsage,
-      cpu: cpuUsage,
-      alerts: await this.checkPerformanceAlerts()
+      devices: devices.map(d => ({ device: d._id || 'unknown', count: d.count })),
+      browsers: browsers.map(b => ({ browser: b._id || 'unknown', count: b.count })),
+      os: os.map(o => ({ os: o._id || 'unknown', count: o.count }))
     };
   }
 
-  private async checkPerformanceAlerts(): Promise<any[]> {
-    const alerts = [];
+  private async getGeographicStats(): Promise<any> {
+    const countries = await Analytics.aggregate([
+      { $group: { _id: '$country', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
     
-    // Verificar uso de memória
-    const memUsage = process.memoryUsage();
-    const memoryPercentage = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-    
-    if (memoryPercentage > 90) {
-      alerts.push({
-        type: 'warning',
-        message: 'High memory usage detected',
-        value: `${memoryPercentage.toFixed(1)}%`
-      });
-    }
-
-    return alerts;
+    return {
+      countries: countries.map(c => ({ country: c._id || 'unknown', count: c.count }))
+    };
   }
 }
+
+export const adminController = new AdminController();

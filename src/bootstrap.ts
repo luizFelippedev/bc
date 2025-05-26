@@ -3,6 +3,8 @@ import { App } from './app';
 import { LoggerService } from './services/LoggerService';
 import { HealthCheckService } from './services/HealthCheckService';
 import { MigrationService } from './services/MigrationService';
+import { User } from './models/User';
+import bcrypt from 'bcryptjs';
 
 export class Bootstrap {
   private static logger = LoggerService.getInstance();
@@ -21,6 +23,9 @@ export class Bootstrap {
       
       // Executar migrations
       await this.runMigrations();
+      
+      // Inicializar usuário administrador
+      await this.initializeAdmin();
       
       // Iniciar monitoramento de saúde
       this.healthService.startMonitoring();
@@ -62,7 +67,41 @@ export class Bootstrap {
     }
   }
 
- // src/bootstrap.ts (continuação)
+  private static async initializeAdmin(): Promise<void> {
+    try {
+      this.logger.info('🔄 Verificando usuário administrador...');
+      
+      // Verificar se já existe um admin
+      const adminExists = await User.findOne({ role: 'admin' });
+      
+      if (adminExists) {
+        this.logger.info('✅ Usuário administrador já existe');
+        return;
+      }
+      
+      // Obter credenciais do ambiente ou usar padrões
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      const adminName = process.env.ADMIN_NAME || 'Administrador';
+      
+      // Criar usuário admin
+      const adminUser = new User({
+        name: adminName,
+        email: adminEmail,
+        password: await bcrypt.hash(adminPassword, 10),
+        role: 'admin',
+        isActive: true
+      });
+      
+      await adminUser.save();
+      
+      this.logger.info(`✅ Usuário administrador criado com sucesso: ${adminEmail}`);
+    } catch (error) {
+      this.logger.error('❌ Falha ao inicializar usuário administrador:', error);
+      throw error;
+    }
+  }
+
   private static setupShutdownHandlers(app: App): void {
     const shutdown = async (signal: string) => {
       this.logger.info(`📴 Recebido sinal ${signal}. Iniciando shutdown graceful...`);

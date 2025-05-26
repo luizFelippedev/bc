@@ -1,41 +1,25 @@
-// src/services/AnalyticsService.ts - Analytics Empresarial
-import { RedisService } from './RedisService';
+import { Analytics } from '../models/Analytics';
+import { Project } from '../models/Project';
 import { LoggerService } from './LoggerService';
+import { CacheService } from './CacheService';
 
-interface AnalyticsEvent {
-  type: string;
-  userId?: string;
+interface TrackEventOptions {
+  eventType: 'page_view' | 'project_view' | 'certificate_view' | 'contact';
+  projectId?: string;
+  certificateId?: string;
+  page?: string;
   sessionId: string;
-  data: Record<string, any>;
-  timestamp: Date;
-  ip?: string;
   userAgent?: string;
-}
-
-interface AnalyticsMetrics {
-  pageViews: number;
-  uniqueVisitors: number;
-  projectViews: number;
-  contactFormSubmissions: number;
-  downloadCount: number;
-  averageSessionDuration: number;
-  bounceRate: number;
-  topPages: Array<{ page: string; views: number }>;
-  topProjects: Array<{ project: string; views: number }>;
-  geographicData: Array<{ country: string; visitors: number }>;
-  deviceData: Array<{ device: string; count: number }>;
-  trafficSources: Array<{ source: string; visitors: number }>;
+  ip?: string;
+  referrer?: string;
 }
 
 export class AnalyticsService {
   private static instance: AnalyticsService;
-  private redis: RedisService;
-  private logger: LoggerService;
+  private logger = LoggerService.getInstance();
+  private cacheService = CacheService.getInstance();
 
-  private constructor() {
-    this.redis = RedisService.getInstance();
-    this.logger = LoggerService.getInstance();
-  }
+  private constructor() {}
 
   public static getInstance(): AnalyticsService {
     if (!AnalyticsService.instance) {
@@ -44,211 +28,166 @@ export class AnalyticsService {
     return AnalyticsService.instance;
   }
 
-  public async trackEvent(event: AnalyticsEvent): Promise<void> {
+  /**
+   * Rastrear evento de visualização
+   */
+  public async trackEvent(options: TrackEventOptions): Promise<void> {
     try {
-      const eventKey = `analytics:events:${new Date().toISOString().split('T')[0]}`;
-      const eventData = JSON.stringify(event);
+      // Extrair informações do user agent
+      const deviceInfo = this.parseUserAgent(options.userAgent || '');
       
-      await this.redis.getClient().lpush(eventKey, eventData);
-      await this.redis.getClient().expire(eventKey, 86400 * 30); // 30 days
+      // Salvar evento no banco de dados
+      const event = new Analytics({
+        eventType: options.eventType,
+        projectId: options.projectId,
+        certificateId: options.certificateId,
+        page: options.page,
+        sessionId: options.sessionId,
+        ip: options.ip,
+        userAgent: options.userAgent,
+        referrer: options.referrer,
+        ...deviceInfo
+      });
       
-      // Update real-time metrics
-      await this.updateRealTimeMetrics(event);
+      await event.save();
       
+      // Atualizar contadores
+      if (options.eventType === 'project_view' && options.projectId) {
+        await Project.findByIdAndUpdate(
+          options.projectId,
+          { $inc: { views: 1 } }
+        );
+      }
+      
+      // Invalidar cache de estatísticas
+      await this.cacheService.delete('admin:dashboard:overview');
+      await this.cacheService.delete('admin:realtime:stats');
     } catch (error) {
-      this.logger.error('Failed to track analytics event:', error);
+      this.logger.error('Erro ao rastrear evento:', error);
     }
   }
 
-  private async updateRealTimeMetrics(event: AnalyticsEvent): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
-    
-    switch (event.type) {
-      case 'page_view':
-        await this.redis.getClient().incr(`analytics:page_views:${today}`);
-        await this.redis.getClient().zincrby(`analytics:top_pages:${today}`, 1, event.data.page);
-        break;
-        
-      case 'project_view':
-        await this.redis.getClient().incr(`analytics:project_views:${today}`);
-        await this.redis.getClient().zincrby(`analytics:top_projects:${today}`, 1, event.data.projectId);
-        break;
-        
-      case 'contact_form':
-        await this.redis.getClient().incr(`analytics:contact_forms:${today}`);
-        break;
-        
-      case 'download':
-        await this.redis.getClient().incr(`analytics:downloads:${today}`);
-        break;
-    }
-    
-    // Track unique visitors
-    if (event.sessionId) {
-      await this.redis.getClient().sadd(`analytics:unique_visitors:${today}`, event.sessionId);
-    }
-  }
-
-  public async getMetrics(startDate: string, endDate: string): Promise<AnalyticsMetrics> {
+  /**
+   * Obter estatísticas detalhadas
+   */
+  public async getDetailedStats(filters: any = {}): Promise<any> {
     try {
-      const dateRange = this.generateDateRange(startDate, endDate);
+      // Buscar eventos filtrados
+      const events = await Analytics.find(filters)
+        .sort({ createdAt: -1 })
+        .limit(1000);
       
-      const [
-        pageViews,
-        uniqueVisitors,
-        projectViews,
-        contactFormSubmissions,
-        downloadCount,
-        topPages,
-        topProjects
-      ] = await Promise.all([
-        this.getPageViews(dateRange),
-        this.getUniqueVisitors(dateRange),
-        this.getProjectViews(dateRange),
-        this.getContactFormSubmissions(dateRange),
-        this.getDownloadCount(dateRange),
-        this.getTopPages(dateRange),
-        this.getTopProjects(dateRange)
-      ]);
+      // Calcular estatísticas
+      const stats = this.calculateStats(events);
+      
+      return stats;
+    } catch (error) {
+      this.logger.error('Erro ao obter estatísticas detalhadas:', error);
+      return {};
+    }
+  }
 
+  /**
+   * Obter estatísticas em tempo real
+   */
+  public async getRealTimeStats(): Promise<any> {
+    try {
+      const cacheKey = 'admin:realtime:stats';
+      let stats = await this.cacheService.get(cacheKey);
+      
+      if (!stats) {
+        const now = new Date();
+        const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+        
+        // Eventos dos últimos 15 minutos
+        const recentEvents = await Analytics.find({
+          createdAt: { $gte: fifteenMinutesAgo }
+        }).sort({ createdAt: -1 });
+        
+        // Sessões ativas
+        const activeSessions = new Set();
+        recentEvents.forEach(event => activeSessions.add(event.sessionId));
+        
+        // Projetos visualizados recentemente
+        const recentProjectViews = await Analytics.find({
+          eventType: 'project_view',
+          projectId: { $exists: true },
+          createdAt: { $gte: fifteenMinutesAgo }
+        }).populate('projectId', 'title slug');
+        
+        stats = {
+          activeVisitors: activeSessions.size,
+          pageViews: recentEvents.filter(e => e.eventType === 'page_view').length,
+          projectViews: recentEvents.filter(e => e.eventType === 'project_view').length,
+          recentProjects: recentProjectViews
+            .map(e => ({ title: e.projectId?.title, slug: e.projectId?.slug, timestamp: e.createdAt }))
+            .slice(0, 5),
+          lastUpdated: new Date()
+        };
+        
+        // Cache por 15 segundos
+        await this.cacheService.set(cacheKey, stats, 15);
+      }
+      
+      return stats;
+    } catch (error) {
+      this.logger.error('Erro ao obter estatísticas em tempo real:', error);
       return {
-        pageViews,
-        uniqueVisitors,
-        projectViews,
-        contactFormSubmissions,
-        downloadCount,
-        averageSessionDuration: 0, // Calculate separately
-        bounceRate: 0, // Calculate separately
-        topPages,
-        topProjects,
-        geographicData: [],
-        deviceData: [],
-        trafficSources: []
+        activeVisitors: 0,
+        pageViews: 0,
+        projectViews: 0,
+        recentProjects: [],
+        lastUpdated: new Date()
       };
-      
-    } catch (error) {
-      this.logger.error('Failed to get analytics metrics:', error);
-      throw error;
     }
   }
 
-  private generateDateRange(startDate: string, endDate: string): string[] {
-    const dates: string[] = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  /**
+   * Métodos auxiliares
+   */
+  private parseUserAgent(userAgent: string): any {
+    // Implementação simplificada - em produção use uma biblioteca como ua-parser-js
+    const isMobile = /mobile|android|iphone|ipad|ipod/i.test(userAgent);
+    const isTablet = /tablet|ipad/i.test(userAgent);
     
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split('T')[0]);
-    }
+    let browser = 'unknown';
+    if (userAgent.includes('Chrome')) browser = 'Chrome';
+    else if (userAgent.includes('Firefox')) browser = 'Firefox';
+    else if (userAgent.includes('Safari')) browser = 'Safari';
+    else if (userAgent.includes('Edge')) browser = 'Edge';
+    else if (userAgent.includes('MSIE') || userAgent.includes('Trident/')) browser = 'Internet Explorer';
     
-    return dates;
-  }
-
-  private async getPageViews(dateRange: string[]): Promise<number> {
-    let total = 0;
-    for (const date of dateRange) {
-      const views = await this.redis.getClient().get(`analytics:page_views:${date}`);
-      total += parseInt(views || '0');
-    }
-    return total;
-  }
-
-  private async getUniqueVisitors(dateRange: string[]): Promise<number> {
-    const allVisitors = new Set<string>();
+    let os = 'unknown';
+    if (userAgent.includes('Windows')) os = 'Windows';
+    else if (userAgent.includes('Mac OS')) os = 'macOS';
+    else if (userAgent.includes('Linux')) os = 'Linux';
+    else if (userAgent.includes('Android')) os = 'Android';
+    else if (userAgent.includes('iOS')) os = 'iOS';
     
-    for (const date of dateRange) {
-      const visitors = await this.redis.getClient().smembers(`analytics:unique_visitors:${date}`);
-      visitors.forEach(visitor => allVisitors.add(visitor));
-    }
-    
-    return allVisitors.size;
-  }
-
-  private async getProjectViews(dateRange: string[]): Promise<number> {
-    let total = 0;
-    for (const date of dateRange) {
-      const views = await this.redis.getClient().get(`analytics:project_views:${date}`);
-      total += parseInt(views || '0');
-    }
-    return total;
-  }
-
-  private async getContactFormSubmissions(dateRange: string[]): Promise<number> {
-    let total = 0;
-    for (const date of dateRange) {
-      const submissions = await this.redis.getClient().get(`analytics:contact_forms:${date}`);
-      total += parseInt(submissions || '0');
-    }
-    return total;
-  }
-
-  private async getDownloadCount(dateRange: string[]): Promise<number> {
-    let total = 0;
-    for (const date of dateRange) {
-      const downloads = await this.redis.getClient().get(`analytics:downloads:${date}`);
-      total += parseInt(downloads || '0');
-    }
-    return total;
-  }
-
-  private async getTopPages(dateRange: string[]): Promise<Array<{ page: string; views: number }>> {
-    const pageData = new Map<string, number>();
-    
-    for (const date of dateRange) {
-      const pages = await this.redis.getClient().zrevrange(`analytics:top_pages:${date}`, 0, -1, 'WITHSCORES');
-      
-      for (let i = 0; i < pages.length; i += 2) {
-        const page = pages[i];
-        const score = parseInt(pages[i + 1]);
-        pageData.set(page, (pageData.get(page) || 0) + score);
-      }
-    }
-    
-    return Array.from(pageData.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([page, views]) => ({ page, views }));
-  }
-
-  private async getTopProjects(dateRange: string[]): Promise<Array<{ project: string; views: number }>> {
-    const projectData = new Map<string, number>();
-    
-    for (const date of dateRange) {
-      const projects = await this.redis.getClient().zrevrange(`analytics:top_projects:${date}`, 0, -1, 'WITHSCORES');
-      
-      for (let i = 0; i < projects.length; i += 2) {
-        const project = projects[i];
-        const score = parseInt(projects[i + 1]);
-        projectData.set(project, (projectData.get(project) || 0) + score);
-      }
-    }
-    
-    return Array.from(projectData.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([project, views]) => ({ project, views }));
-  }
-
-  public async getRealTimeMetrics(): Promise<any> {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const [
-      todayPageViews,
-      todayUniqueVisitors,
-      todayProjectViews,
-      activeUsers
-    ] = await Promise.all([
-      this.redis.getClient().get(`analytics:page_views:${today}`),
-      this.redis.getClient().scard(`analytics:unique_visitors:${today}`),
-      this.redis.getClient().get(`analytics:project_views:${today}`),
-      this.redis.getClient().scard('analytics:active_users')
-    ]);
-
     return {
-      todayPageViews: parseInt(todayPageViews || '0'),
-      todayUniqueVisitors,
-      todayProjectViews: parseInt(todayProjectViews || '0'),
-      activeUsers
+      device: isTablet ? 'tablet' : (isMobile ? 'mobile' : 'desktop'),
+      browser,
+      os
+    };
+  }
+
+  private calculateStats(events: any[]): any {
+    // Aqui você implementaria cálculos estatísticos detalhados
+    // Por simplicidade, vamos retornar contagens básicas
+    
+    return {
+      total: events.length,
+      byType: {
+        pageView: events.filter(e => e.eventType === 'page_view').length,
+        projectView: events.filter(e => e.eventType === 'project_view').length,
+        certificateView: events.filter(e => e.eventType === 'certificate_view').length,
+        contact: events.filter(e => e.eventType === 'contact').length
+      },
+      byDevice: {
+        desktop: events.filter(e => e.device === 'desktop').length,
+        mobile: events.filter(e => e.device === 'mobile').length,
+        tablet: events.filter(e => e.device === 'tablet').length
+      }
     };
   }
 }

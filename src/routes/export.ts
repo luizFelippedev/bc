@@ -1,7 +1,7 @@
 // src/routes/export.ts
 import { Router } from 'express';
 import { exportController } from '../controllers/ExportController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware } from '../middlewares/AuthMiddleware';
 import { RateLimitMiddleware } from '../middlewares/RateLimitMiddleware';
 
 const router = Router();

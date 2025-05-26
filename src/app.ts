@@ -1,4 +1,4 @@
-// src/app.ts (refatorado)
+// src/app.ts
 import express, { Application } from 'express';
 import { createServer, Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -6,6 +6,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import RedisStore from 'connect-redis';
+import path from 'path';
 import { redisClient } from './config/redis';
 import { config } from './config/environment';
 import { DatabaseService } from './services/DatabaseService';
@@ -14,6 +15,7 @@ import { SecurityConfig } from './config/security';
 import { ErrorHandlerMiddleware } from './middlewares/errorHandler';
 import { LoggerMiddleware } from './middlewares/loggerMiddleware';
 import { HealthCheckService } from './services/HealthCheckService';
+import { SocketService } from './services/SocketService';
 import router from './routes';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -25,6 +27,7 @@ export class App {
   private logger = LoggerService.getInstance();
   private database = DatabaseService.getInstance();
   private healthService = HealthCheckService.getInstance();
+  private socketService: SocketService | null = null;
 
   constructor() {
     this.app = express();
@@ -39,6 +42,7 @@ export class App {
     this.setupMiddlewares();
     this.setupRoutes();
     this.setupErrorHandling();
+    this.setupSocketService();
   }
 
   private setupMiddlewares(): void {
@@ -77,7 +81,7 @@ export class App {
     SecurityConfig.setup(this.app);
     
     // Servir arquivos estáticos
-    this.app.use('/uploads', express.static('uploads'));
+    this.app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
     
     // Swagger API docs
     this.app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -94,7 +98,6 @@ export class App {
     this.app.use('/api', router);
   }
 
- // src/app.ts (continuação)
   private setupErrorHandling(): void {
     // Rota não encontrada (404)
     this.app.use(ErrorHandlerMiddleware.notFound);
@@ -104,6 +107,13 @@ export class App {
     
     // Configurar handlers para exceções não capturadas
     ErrorHandlerMiddleware.setupUncaughtHandlers();
+  }
+
+  private setupSocketService(): void {
+    // Inicializar serviço de WebSocket para dashboard em tempo real
+    this.socketService = SocketService.getInstance(this.io);
+    this.socketService.initialize();
+    this.logger.info('Serviço WebSocket inicializado');
   }
 
   public async start(): Promise<void> {
@@ -120,6 +130,7 @@ export class App {
         this.logger.info(`🚀 Servidor iniciado na porta ${port}`);
         this.logger.info(`📚 Documentação API: http://localhost:${port}/docs`);
         this.logger.info(`🌍 Ambiente: ${process.env.NODE_ENV}`);
+        this.logger.info(`👤 Acesso admin: http://localhost:${port}/admin`);
       });
     } catch (error) {
       this.logger.error('Falha ao iniciar aplicação:', error);

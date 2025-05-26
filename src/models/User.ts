@@ -1,63 +1,67 @@
-// src/models/User.ts - User model
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { IUser } from '../types';
 
-const socialLinkSchema = new Schema({
-  platform: { type: String, required: true },
-  url: { type: String, required: true },
-  username: String
-});
-
-const skillSchema = new Schema({
-  name: { type: String, required: true },
-  level: { 
-    type: String, 
-    enum: ['beginner', 'intermediate', 'advanced', 'expert'],
-    required: true 
-  },
-  category: { 
-    type: String, 
-    enum: ['frontend', 'backend', 'database', 'devops', 'mobile', 'design', 'other'],
-    required: true 
-  },
-  yearsOfExperience: { type: Number, required: true },
-  icon: String
-});
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  role: 'admin';
+  avatar?: string;
+  lastLogin?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword(password: string): Promise<boolean>;
+}
 
 const userSchema = new Schema<IUser>({
-  name: { type: String, required: true, trim: true },
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true 
+  },
   email: { 
     type: String, 
     required: true, 
     unique: true, 
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email']
+    trim: true
   },
-  password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['admin', 'visitor'], default: 'visitor' },
+  password: { 
+    type: String, 
+    required: true, 
+    minlength: 8
+  },
+  role: { 
+    type: String, 
+    enum: ['admin'], 
+    default: 'admin'
+  },
   avatar: String,
-  bio: { type: String, maxlength: 500 },
-  skills: [skillSchema],
-  socialLinks: [socialLinkSchema]
+  lastLogin: Date,
+  isActive: { 
+    type: Boolean, 
+    default: true 
+  }
 }, {
-  timestamps: true,
-  toJSON: { 
-    transform: (doc, ret) => {
-      delete ret.password;
-      return ret;
-    }
+  timestamps: true
+});
+
+// Criptografar senha antes de salvar
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
+  } catch (error) {
+    next(error);
   }
 });
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
+// Método para comparar senha
 userSchema.methods.comparePassword = async function(password: string): Promise<boolean> {
   return bcrypt.compare(password, this.password);
 };
 
-export default model<IUser>('User', userSchema);
+export const User = model<IUser>('User', userSchema);
