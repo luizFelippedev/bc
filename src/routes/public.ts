@@ -1,8 +1,12 @@
+// ===== src/routes/public.ts =====
 import { Router } from 'express';
-import { PublicController } from '../controllers/PublicController';
+import { publicController } from '../controllers/PublicController';
+import { RateLimitMiddleware } from '../middlewares/RateLimitMiddleware';
 
 const router = Router();
-const publicController = new PublicController();
+
+// Rate limiting para rotas públicas
+router.use(RateLimitMiddleware.publicApiLimiter);
 
 // Rotas públicas
 router.get('/projects', publicController.getProjects.bind(publicController));
@@ -10,7 +14,7 @@ router.get('/projects/:slug', publicController.getProjectBySlug.bind(publicContr
 router.get('/certificates', publicController.getCertificates.bind(publicController));
 router.get('/configuration', publicController.getConfiguration.bind(publicController));
 
-// Rastreamento de analytics
+// Analytics tracking
 router.post('/analytics/track', publicController.trackEvent.bind(publicController));
 
 export default router;

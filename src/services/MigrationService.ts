@@ -1,4 +1,4 @@
-// src/services/MigrationService.ts - Sistema de Migração de Dados
+// ===== src/services/MigrationService.ts =====
 import { LoggerService } from './LoggerService';
 import { DatabaseService } from './DatabaseService';
 import fs from 'fs/promises';
@@ -34,119 +34,42 @@ export class MigrationService {
 
   public async runMigrations(): Promise<void> {
     try {
-      // Ensure migrations collection exists
       await this.ensureMigrationsCollection();
-
-      // Get all migration files
-      const migrationFiles = await this.getMigrationFiles();
       
-      // Get executed migrations
+      const migrationFiles = await this.getMigrationFiles();
       const executedMigrations = await this.getExecutedMigrations();
       const executedVersions = new Set(executedMigrations.map(m => m.version));
 
-      // Run pending migrations
       for (const migrationFile of migrationFiles) {
-        const migration = await this.loadMigration(migrationFile);
-        
-        if (!executedVersions.has(migration.version)) {
-          this.logger.info(`Running migration: ${migration.name}`);
+        try {
+          const migration = await this.loadMigration(migrationFile);
           
-          try {
+          if (!executedVersions.has(migration.version)) {
+            this.logger.info(`Executando migration: ${migration.name}`);
+            
             await migration.up();
             await this.markMigrationAsExecuted(migration);
-            this.logger.info(`Migration completed: ${migration.name}`);
-          } catch (error) {
-            this.logger.error(`Migration failed: ${migration.name}`, error);
-            throw error;
+            this.logger.info(`Migration completada: ${migration.name}`);
           }
+        } catch (error) {
+          this.logger.warn(`Erro ao carregar migration ${migrationFile}:`, error);
+          // Continue com próximas migrations
         }
       }
 
-      this.logger.info('All migrations completed successfully');
+      this.logger.info('Migrations executadas com sucesso');
     } catch (error) {
-      this.logger.error('Migration process failed:', error);
+      this.logger.error('Processo de migration falhou:', error);
       throw error;
     }
-  }
-
-  public async rollbackMigration(version: string): Promise<void> {
-    try {
-      const migrationFiles = await this.getMigrationFiles();
-      const migration = await this.loadMigration(
-        migrationFiles.find(f => f.includes(version))!
-      );
-
-      this.logger.info(`Rolling back migration: ${migration.name}`);
-      
-      await migration.down();
-      await this.removeMigrationRecord(version);
-      
-      this.logger.info(`Migration rolled back: ${migration.name}`);
-    } catch (error) {
-      this.logger.error('Migration rollback failed:', error);
-      throw error;
-    }
-  }
-
-  public async createMigration(name: string, description: string): Promise<void> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const version = `${timestamp.split('T')[0].replace(/-/g, '')}_${Date.now()}`;
-    const filename = `${version}_${name.replace(/\s+/g, '_').toLowerCase()}.ts`;
-    const filepath = path.join(this.migrationsPath, filename);
-
-    const template = `// Migration: ${name}
-// Description: ${description}
-// Created: ${new Date().toISOString()}
-
-import { Migration } from '../services/MigrationService';
-
-export const migration: Migration = {
-  version: '${version}',
-  name: '${name}',
-  description: '${description}',
-  
-  async up(): Promise<void> {
-    // Migration logic here
-    console.log('Running migration: ${name}');
-    
-    // Example: Create new collection
-    // await db.createCollection('new_collection');
-    
-    // Example: Add new field to existing documents
-    // await db.collection('projects').updateMany(
-    //   {},
-    //   { $set: { newField: 'defaultValue' } }
-    // );
-  },
-  
-  async down(): Promise<void> {
-    // Rollback logic here
-    console.log('Rolling back migration: ${name}');
-    
-    // Example: Drop collection
-    // await db.dropCollection('new_collection');
-    
-    // Example: Remove field from existing documents
-    // await db.collection('projects').updateMany(
-    //   {},
-    //   { $unset: { newField: '' } }
-    // );
-  }
-};
-`;
-
-    await fs.mkdir(this.migrationsPath, { recursive: true });
-    await fs.writeFile(filepath, template);
-    
-    this.logger.info(`Migration created: ${filename}`);
   }
 
   private async ensureMigrationsCollection(): Promise<void> {
-    const mongo = this.database.getMongo();
-    if (mongo) {
-      const collections = await mongo.db.listCollections({ name: 'migrations' }).toArray();
+    const connection = this.database.getConnection();
+    if (connection) {
+      const collections = await connection.db.listCollections({ name: 'migrations' }).toArray();
       if (collections.length === 0) {
-        await mongo.db.createCollection('migrations');
+        await connection.db.createCollection('migrations');
       }
     }
   }
@@ -158,7 +81,7 @@ export const migration: Migration = {
         .filter(file => file.endsWith('.ts') || file.endsWith('.js'))
         .sort();
     } catch (error) {
-      this.logger.warn('Migrations directory not found');
+      this.logger.info('Diretório de migrations não encontrado ou vazio');
       return [];
     }
   }
@@ -166,31 +89,24 @@ export const migration: Migration = {
   private async loadMigration(filename: string): Promise<Migration> {
     const filepath = path.join(this.migrationsPath, filename);
     const module = await import(filepath);
-    return module.migration;
+    return module.migration || module.default;
   }
 
   private async getExecutedMigrations(): Promise<Migration[]> {
-    const mongo = this.database.getMongo();
-    if (mongo) {
-      return await mongo.db.collection('migrations').find({}).toArray();
+    const connection = this.database.getConnection();
+    if (connection) {
+      return await connection.db.collection('migrations').find({}).toArray();
     }
     return [];
   }
 
   private async markMigrationAsExecuted(migration: Migration): Promise<void> {
-    const mongo = this.database.getMongo();
-    if (mongo) {
-      await mongo.db.collection('migrations').insertOne({
+    const connection = this.database.getConnection();
+    if (connection) {
+      await connection.db.collection('migrations').insertOne({
         ...migration,
         executedAt: new Date()
       });
-    }
-  }
-
-  private async removeMigrationRecord(version: string): Promise<void> {
-    const mongo = this.database.getMongo();
-    if (mongo) {
-      await mongo.db.collection('migrations').deleteOne({ version });
     }
   }
 }

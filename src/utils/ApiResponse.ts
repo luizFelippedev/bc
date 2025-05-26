@@ -1,36 +1,53 @@
-export interface ApiResponseData {
-  [key: string]: any;
+// ===== src/utils/ApiResponse.ts =====
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
-export class ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-  statusCode: number;
-
-  constructor(init: Partial<ApiResponse<T>>) {
-    this.success = init.success ?? false;
-    this.data = init.data;
-    this.error = init.error;
-    this.message = init.message;
-    this.statusCode = init.statusCode ?? 500;
-  }
-
-  static success<T>(data?: T, message?: string): ApiResponse<T> {
-    return new ApiResponse<T>({
+export class ApiResponse {
+  /**
+   * Resposta de sucesso
+   */
+  public static success<T>(data: T, message?: string): any {
+    return {
       success: true,
+      message: message || 'Operation completed successfully',
       data,
-      message,
-      statusCode: 200
-    });
+      timestamp: new Date().toISOString()
+    };
   }
 
-  static error(error: string, statusCode: number = 500): ApiResponse {
-    return new ApiResponse({
+  /**
+   * Resposta de erro
+   */
+  public static error(message: string, statusCode: number = 500, errors?: any): any {
+    return {
       success: false,
-      error,
-      statusCode
-    });
+      message,
+      statusCode,
+      errors,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Resposta paginada
+   */
+  public static paginated<T>(
+    data: T[], 
+    pagination: PaginationMeta, 
+    message?: string
+  ): any {
+    return {
+      success: true,
+      message: message || 'Data retrieved successfully',
+      data,
+      pagination,
+      timestamp: new Date().toISOString()
+    };
   }
 }

@@ -1,4 +1,4 @@
-// src/app.ts
+// ===== src/app.ts =====
 import express, { Application } from 'express';
 import { createServer, Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -7,16 +7,21 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import path from 'path';
+import cors from 'cors';
+
 import { redisClient } from './config/redis';
 import { config } from './config/environment';
 import { DatabaseService } from './services/DatabaseService';
 import { LoggerService } from './services/LoggerService';
-import { SecurityConfig } from './config/security';
-import { ErrorHandlerMiddleware } from './middlewares/errorHandler';
-import { LoggerMiddleware } from './middlewares/loggerMiddleware';
 import { HealthCheckService } from './services/HealthCheckService';
 import { SocketService } from './services/SocketService';
-import router from './routes';
+import { ErrorHandlerMiddleware } from './middlewares/errorHandler';
+import { LoggerMiddleware } from './middlewares/loggerMiddleware';
+
+import authRoutes from './routes/auth';
+import publicRoutes from './routes/public';
+import adminRoutes from './routes/admin';
+
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -35,7 +40,8 @@ export class App {
     this.io = new SocketIOServer(this.server, {
       cors: {
         origin: config.cors.origins,
-        credentials: true
+        credentials: config.cors.credentials,
+        methods: config.cors.methods
       }
     });
 
@@ -46,6 +52,14 @@ export class App {
   }
 
   private setupMiddlewares(): void {
+    // CORS
+    this.app.use(cors({
+      origin: config.cors.origins,
+      credentials: config.cors.credentials,
+      methods: config.cors.methods,
+      allowedHeaders: config.cors.allowedHeaders
+    }));
+
     // Adicionar ID único a cada requisição
     this.app.use(LoggerMiddleware.requestId());
     
@@ -55,15 +69,18 @@ export class App {
     // Compressão de resposta
     this.app.use(compression());
     
+    // Trust proxy (para obter IP real atrás de proxies)
+    this.app.set('trust proxy', 1);
+    
     // Parsing de JSON e URL-encoded
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
-    // Cookies e sessão
+    // Cookies
     this.app.use(cookieParser(config.session?.secret));
     
-    // Configurar session com Redis
-    if (config.session?.enabled) {
+    // Configurar session com Redis se habilitado
+    if (config.session?.enabled && redisClient) {
       this.app.use(session({
         store: new RedisStore({ client: redisClient }),
         secret: config.session.secret,
@@ -72,13 +89,18 @@ export class App {
         cookie: {
           secure: process.env.NODE_ENV === 'production',
           httpOnly: true,
-          maxAge: config.session.maxAge || 86400000 // 1 dia
+          maxAge: config.session.maxAge
         }
       }));
     }
     
-    // Configurações de segurança
-    SecurityConfig.setup(this.app);
+    // Headers de segurança básicos
+    this.app.use((req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      next();
+    });
     
     // Servir arquivos estáticos
     this.app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -90,12 +112,33 @@ export class App {
   private setupRoutes(): void {
     // Endpoint de health check simples
     this.app.get('/health', async (req, res) => {
-      const status = await this.healthService.getStatusSummary();
-      res.status(status.status === 'healthy' ? 200 : 503).json(status);
+      try {
+        const status = await this.healthService.getStatusSummary();
+        res.status(status.status === 'healthy' ? 200 : 503).json(status);
+      } catch (error) {
+        res.status(503).json({
+          status: 'unhealthy',
+          timestamp: new Date().toISOString(),
+          error: 'Health check failed'
+        });
+      }
     });
     
     // Rotas da API
-    this.app.use('/api', router);
+    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/public', publicRoutes);
+    this.app.use('/api/admin', adminRoutes);
+    
+    // Rota raiz
+    this.app.get('/', (req, res) => {
+      res.json({
+        name: 'Portfolio API',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: config.environment,
+        docs: '/docs',
+        status: 'running'
+      });
+    });
   }
 
   private setupErrorHandling(): void {
@@ -104,13 +147,10 @@ export class App {
     
     // Handler de erros global
     this.app.use(ErrorHandlerMiddleware.handleError);
-    
-    // Configurar handlers para exceções não capturadas
-    ErrorHandlerMiddleware.setupUncaughtHandlers();
   }
 
   private setupSocketService(): void {
-    // Inicializar serviço de WebSocket para dashboard em tempo real
+    // Inicializar serviço de WebSocket
     this.socketService = SocketService.getInstance(this.io);
     this.socketService.initialize();
     this.logger.info('Serviço WebSocket inicializado');
@@ -125,12 +165,11 @@ export class App {
       this.healthService.startMonitoring();
       
       // Iniciar servidor
-      const port = config.port || 5000;
+      const port = config.port;
       this.server.listen(port, () => {
         this.logger.info(`🚀 Servidor iniciado na porta ${port}`);
         this.logger.info(`📚 Documentação API: http://localhost:${port}/docs`);
-        this.logger.info(`🌍 Ambiente: ${process.env.NODE_ENV}`);
-        this.logger.info(`👤 Acesso admin: http://localhost:${port}/admin`);
+        this.logger.info(`🌍 Ambiente: ${config.environment}`);
       });
     } catch (error) {
       this.logger.error('Falha ao iniciar aplicação:', error);
@@ -140,7 +179,7 @@ export class App {
 
   public async shutdown(): Promise<void> {
     try {
-      this.logger.info('Iniciando desligamento do servidor...');
+      this.logger.info('Iniciando shutdown graceful...');
       
       // Parar monitoramento de saúde
       this.healthService.stopMonitoring();
@@ -161,21 +200,7 @@ export class App {
       
       this.logger.info('Servidor desligado com sucesso');
     } catch (error) {
-      this.logger.error('Erro durante o desligamento do servidor:', error);
+      this.logger.error('Erro durante o shutdown:', error);
       throw error;
     }
-  }
-  
-  // Getter para facilitar testes
-  public getApp(): Application {
-    return this.app;
-  }
-  
-  public getServer(): HttpServer {
-    return this.server;
-  }
-  
-  public getSocketIO(): SocketIOServer {
-    return this.io;
-  }
 }

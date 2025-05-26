@@ -1,3 +1,4 @@
+// ===== src/services/DatabaseService.ts =====
 import mongoose, { Connection } from 'mongoose';
 import { config } from '../config/environment';
 import { LoggerService } from './LoggerService';
@@ -6,6 +7,7 @@ export class DatabaseService {
   private static instance: DatabaseService;
   private connection: Connection | null = null;
   private logger = LoggerService.getInstance();
+  private isConnecting = false;
 
   private constructor() {}
 
@@ -17,28 +19,58 @@ export class DatabaseService {
   }
 
   public async connect(): Promise<void> {
-    try {
-      await mongoose.connect(config.database.mongodb.uri, config.database.mongodb.options);
-      this.connection = mongoose.connection;
-      this.logger.info('✅ MongoDB connected successfully');
-
-      this.connection.on('error', (error) => {
-        this.logger.error('❌ MongoDB connection error:', error);
-      });
-
-      this.connection.on('disconnected', () => {
-        this.logger.warn('MongoDB disconnected');
-      });
-    } catch (error) {
-      this.logger.error('❌ Failed to connect to MongoDB:', error);
-      throw error;
+    if (this.connection?.readyState === 1) {
+      this.logger.info('MongoDB já está conectado');
+      return;
     }
+
+    if (this.isConnecting) {
+      this.logger.info('Conexão com MongoDB já está em andamento');
+      return;
+    }
+
+    try {
+      this.isConnecting = true;
+      
+      await mongoose.connect(config.database.mongodb.uri, config.database.mongodb.options);
+      
+      this.connection = mongoose.connection;
+      this.setupEventHandlers();
+      
+      this.logger.info('✅ MongoDB conectado com sucesso');
+    } catch (error) {
+      this.logger.error('❌ Falha ao conectar com MongoDB:', error);
+      throw error;
+    } finally {
+      this.isConnecting = false;
+    }
+  }
+
+  private setupEventHandlers(): void {
+    if (!this.connection) return;
+
+    this.connection.on('connected', () => {
+      this.logger.info('MongoDB conectado');
+    });
+
+    this.connection.on('error', (error) => {
+      this.logger.error('❌ Erro de conexão MongoDB:', error);
+    });
+
+    this.connection.on('disconnected', () => {
+      this.logger.warn('MongoDB desconectado');
+    });
+
+    this.connection.on('reconnected', () => {
+      this.logger.info('MongoDB reconectado');
+    });
   }
 
   public async disconnect(): Promise<void> {
     if (this.connection) {
       await mongoose.disconnect();
-      this.logger.info('MongoDB connection closed');
+      this.connection = null;
+      this.logger.info('Conexão MongoDB fechada');
     }
   }
 
@@ -46,15 +78,19 @@ export class DatabaseService {
     return this.connection;
   }
 
-  public getMongo(): Connection | null {
-    return this.connection;
-  }
-
   public async isHealthy(): Promise<boolean> {
     try {
       if (!this.connection) return false;
       // 1 = connected, 2 = connecting
-      return [1, 2].includes(this.connection.readyState);
+      const isConnected = [1, 2].includes(this.connection.readyState);
+      
+      if (isConnected) {
+        // Test with a simple operation
+        await this.connection.db.admin().ping();
+        return true;
+      }
+      
+      return false;
     } catch {
       return false;
     }

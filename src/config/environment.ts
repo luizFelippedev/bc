@@ -1,4 +1,4 @@
-// src/config/environment.ts - Configuração Empresarial
+// ===== src/config/environment.ts =====
 import { ConnectOptions } from 'mongoose';
 
 export interface AppConfig {
@@ -34,22 +34,27 @@ export interface AppConfig {
     maxSize: number;
     allowedTypes: string[];
   };
+  session?: {
+    secret: string;
+    maxAge: number;
+    enabled: boolean;
+  };
 }
 
 export const config: AppConfig = {
-  port: parseInt(process.env.PORT || '5001'),
+  port: parseInt(process.env.PORT || '5000'),
   environment: process.env.NODE_ENV || 'development',
   
   database: {
     mongodb: {
       uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio',
       options: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-      }
+        bufferCommands: false,
+        bufferMaxEntries: 0,
+      } as ConnectOptions
     },
     redis: {
       host: process.env.REDIS_HOST || 'localhost',
@@ -60,23 +65,35 @@ export const config: AppConfig = {
 
   cors: {
     origins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key',
-    expiresIn: '1h',
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
+    expiresIn: process.env.JWT_EXPIRES_IN || '8h',
     refreshToken: {
       secret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret',
-      expiresIn: '7d'
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
     }
   },
 
   uploads: {
-    path: 'uploads',
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+    path: process.env.UPLOAD_PATH || 'uploads',
+    maxSize: parseInt(process.env.MAX_FILE_SIZE || '52428800'), // 50MB
+    allowedTypes: [
+      'image/jpeg', 
+      'image/png', 
+      'image/webp', 
+      'image/gif',
+      'application/pdf'
+    ]
+  },
+
+  session: {
+    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    maxAge: parseInt(process.env.SESSION_MAX_AGE || '86400000'), // 24 hours
+    enabled: process.env.SESSION_ENABLED === 'true'
   }
 };
