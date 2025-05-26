@@ -1,30 +1,21 @@
-import { App } from './app';
+// src/server.ts (refatorado)
+import { Bootstrap } from './bootstrap';
 import { LoggerService } from './services/LoggerService';
 
 const logger = LoggerService.getInstance();
-const server = new App();
 
-async function bootstrap() {
+async function startServer() {
   try {
-    await server.start();
-
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
+    const app = await Bootstrap.init();
+    await app.start();
+    
+    logger.info(`✅ Servidor rodando na porta ${process.env.PORT}`);
+    logger.info(`🌍 Ambiente: ${process.env.NODE_ENV}`);
+    logger.info(`📚 Documentação API: http://localhost:${process.env.PORT}/docs`);
   } catch (error) {
-    logger.error('Failed to start application:', error);
+    logger.error('❌ Falha ao iniciar o servidor:', error);
     process.exit(1);
   }
 }
 
-async function gracefulShutdown() {
-  logger.info('Received shutdown signal');
-  try {
-    await server.shutdown();
-    process.exit(0);
-  } catch (error) {
-    logger.error('Error during shutdown:', error);
-    process.exit(1);
-  }
-}
-
-bootstrap();
+startServer();
