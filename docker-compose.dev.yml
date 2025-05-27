@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  app:
+  portfolio-app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,11 +11,13 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
-      - MONGODB_URI=mongodb://mongodb:27017/portfolio_development
-      - REDIS_URL=redis://redis:6379
+      - MONGODB_URI=mongodb://portfolio-mongodb:27017/portfolio_development
+      - REDIS_URL=redis://portfolio-redis:6379
+      - JWT_SECRET=your-dev-jwt-secret-key
+      - LOG_LEVEL=debug
     depends_on:
-      - mongodb
-      - redis
+      - portfolio-mongodb
+      - portfolio-redis
     volumes:
       - .:/app
       - /app/node_modules
@@ -23,24 +25,33 @@ services:
       - ./logs:/app/logs
     networks:
       - portfolio-network
+    restart: unless-stopped
 
-  mongodb:
+  portfolio-mongodb:
     image: mongo:6
+    container_name: portfolio-mongodb-dev
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=portfolio_development
     volumes:
       - mongodb_dev_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - portfolio-network
+    restart: unless-stopped
 
-  redis:
+  portfolio-redis:
     image: redis:7-alpine
+    container_name: portfolio-redis-dev
     ports:
       - "6379:6379"
     volumes:
       - redis_dev_data:/data
     networks:
       - portfolio-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
 volumes:
   mongodb_dev_data:

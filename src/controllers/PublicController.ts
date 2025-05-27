@@ -91,11 +91,10 @@ export class PublicController {
         }).lean();
         
         if (!project) {
-  res.status(404).json(
-    ApiResponse.error('Projeto não encontrado', 404)
-  );
-  return; // Sem return res
-}
+          return res.status(404).json(
+            ApiResponse.error('Projeto não encontrado', 404)
+          );
+        }
         
         // Cache por 15 minutos
         await this.cacheService.set(cacheKey, project, 900);
@@ -125,18 +124,20 @@ export class PublicController {
    */
   public async getCertificates(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { featured } = req.query;
+      const { featured, category, limit = 20 } = req.query;
       
-      const cacheKey = `public:certificates:${featured || 'all'}`;
+      const cacheKey = `public:certificates:${featured || 'all'}:${category || 'all'}:${limit}`;
       let certificates = await this.cacheService.get(cacheKey);
       
       if (!certificates) {
         const filters: any = { isActive: true };
         if (featured) filters.featured = featured === 'true';
+        if (category) filters.category = category;
         
         certificates = await Certificate.find(filters)
           .select('title issuer dates category skills level featured image')
           .sort({ featured: -1, 'dates.issued': -1 })
+          .limit(Number(limit))
           .lean();
         
         // Cache por 30 minutos
@@ -190,12 +191,67 @@ export class PublicController {
   }
 
   /**
+   * Obter estatísticas públicas
+   * GET /api/public/stats
+   */
+  public async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const cacheKey = 'public:stats';
+      let stats = await this.cacheService.get(cacheKey);
+      
+      if (!stats) {
+        const [
+          totalProjects,
+          totalCertificates,
+          totalViews,
+          featuredProjects
+        ] = await Promise.all([
+          Project.countDocuments({ isActive: true, visibility: 'public' }),
+          Certificate.countDocuments({ isActive: true }),
+          Project.aggregate([
+            { $match: { isActive: true, visibility: 'public' } },
+            { $group: { _id: null, totalViews: { $sum: '$views' } } }
+          ]),
+          Project.find({ 
+            isActive: true, 
+            visibility: 'public', 
+            featured: true 
+          }).countDocuments()
+        ]);
+        
+        stats = {
+          projects: totalProjects,
+          certificates: totalCertificates,
+          views: totalViews[0]?.totalViews || 0,
+          featuredProjects,
+          lastUpdated: new Date()
+        };
+        
+        // Cache por 10 minutos
+        await this.cacheService.set(cacheKey, stats, 600);
+      }
+      
+      res.json(ApiResponse.success(stats));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Rastrear evento de analytics
    * POST /api/public/analytics/track
    */
   public async trackEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { eventType, projectId, certificateId, page } = req.body;
+      
+      // Validar tipos de evento permitidos
+      const allowedEvents = ['page_view', 'project_view', 'certificate_view', 'contact'];
+      if (!allowedEvents.includes(eventType)) {
+        return res.status(400).json(
+          ApiResponse.error('Tipo de evento inválido', 400)
+        );
+      }
       
       await this.analyticsService.trackEvent({
         eventType,
@@ -209,6 +265,68 @@ export class PublicController {
       });
       
       res.json(ApiResponse.success(null, 'Evento rastreado com sucesso'));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Buscar conteúdo público
+   * GET /api/public/search
+   */
+  public async search(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { q: query, type = 'all', limit = 20 } = req.query;
+      
+      if (!query || typeof query !== 'string' || query.trim().length < 2) {
+        return res.status(400).json(
+          ApiResponse.error('Query de busca deve ter pelo menos 2 caracteres', 400)
+        );
+      }
+      
+      const cacheKey = `public:search:${query}:${type}:${limit}`;
+      let results = await this.cacheService.get(cacheKey);
+      
+      if (!results) {
+        const searchResults: any = {
+          projects: [],
+          certificates: [],
+          total: 0
+        };
+        
+        if (type === 'all' || type === 'projects') {
+          const projects = await Project.find({
+            $text: { $search: query },
+            isActive: true,
+            visibility: 'public'
+          })
+          .select('title slug shortDescription category featured images')
+          .limit(type === 'all' ? Number(limit) / 2 : Number(limit))
+          .lean();
+          
+          searchResults.projects = projects;
+        }
+        
+        if (type === 'all' || type === 'certificates') {
+          const certificates = await Certificate.find({
+            $text: { $search: query },
+            isActive: true
+          })
+          .select('title issuer.name category level featured image')
+          .limit(type === 'all' ? Number(limit) / 2 : Number(limit))
+          .lean();
+          
+          searchResults.certificates = certificates;
+        }
+        
+        searchResults.total = searchResults.projects.length + searchResults.certificates.length;
+        results = searchResults;
+        
+        // Cache por 5 minutos
+        await this.cacheService.set(cacheKey, results, 300);
+      }
+      
+      res.json(ApiResponse.success(results));
     } catch (error) {
       next(error);
     }

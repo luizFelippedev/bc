@@ -60,30 +60,6 @@ export class AuthController {
     }
   }
 
-  public async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const user = await User.findById(req.user?.id).select('-password');
-      
-      if (!user || !user.isActive) {
-        throw ApiError.unauthorized('Usuário não encontrado');
-      }
-      
-      // Gerar novo token
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
-      );
-      
-      res.json(
-        ApiResponse.success({ token }, 'Token renovado com sucesso')
-      );
-    } catch (error) {
-      next(error);
-    }
-  }
-
-
   /**
    * Logout (invalidação do token no cliente)
    * POST /api/auth/logout
@@ -95,6 +71,34 @@ export class AuthController {
       );
       
       this.logger.info(`Admin logout: ${req.user?.id}`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verificar token
+   * GET /api/auth/verify
+   */
+  public async verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = await User.findById(req.user?.id).select('-password');
+      
+      if (!user || !user.isActive) {
+        throw ApiError.unauthorized('Usuário não encontrado ou inativo');
+      }
+      
+      res.json(
+        ApiResponse.success({
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role
+          }
+        }, 'Token válido')
+      );
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,6 @@
 // src/services/NotificationService.ts - Sistema de Notificações
 import { Server as SocketIOServer } from 'socket.io';
-import { RedisService } from './RedisService';
+import { CacheService } from './CacheService';
 import { EmailService } from './EmailService';
 import { LoggerService } from './LoggerService';
 
@@ -21,12 +21,12 @@ interface Notification {
 export class NotificationService {
   private static instance: NotificationService;
   private io: SocketIOServer | null = null;
-  private redis: RedisService;
+  private cacheService: CacheService;
   private emailService: EmailService;
   private logger: LoggerService;
 
   private constructor() {
-    this.redis = RedisService.getInstance();
+    this.cacheService = CacheService.getInstance();
     this.emailService = EmailService.getInstance();
     this.logger = LoggerService.getInstance();
   }
@@ -40,6 +40,7 @@ export class NotificationService {
 
   public setSocketIO(io: SocketIOServer): void {
     this.io = io;
+    this.logger.info('SocketIOServer configurado no NotificationService');
   }
 
   public async sendNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<void> {
@@ -49,131 +50,266 @@ export class NotificationService {
       createdAt: new Date()
     };
 
-    // Armazenar notificação
-    await this.storeNotification(fullNotification);
+    try {
+      // Armazenar notificação
+      await this.storeNotification(fullNotification);
 
-    // Enviar pelos canais especificados
-    for (const channel of notification.channels) {
-      switch (channel) {
-        case 'socket':
-          await this.sendSocketNotification(fullNotification);
-          break;
-        case 'email':
-          await this.sendEmailNotification(fullNotification);
-          break;
-        case 'push':
-          await this.sendPushNotification(fullNotification);
-          break;
-      }
+      // Enviar pelos canais especificados
+      const sendPromises = notification.channels.map(channel => {
+        switch (channel) {
+          case 'socket':
+            return this.sendSocketNotification(fullNotification);
+          case 'email':
+            return this.sendEmailNotification(fullNotification);
+          case 'push':
+            return this.sendPushNotification(fullNotification);
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      await Promise.allSettled(sendPromises);
+      
+      this.logger.info('Notificação enviada com sucesso', {
+        id: fullNotification.id,
+        type: fullNotification.type,
+        channels: notification.channels,
+        recipients: notification.recipients.length
+      });
+    } catch (error) {
+      this.logger.error('Erro ao enviar notificação:', error);
+      throw error;
     }
   }
 
   private async sendSocketNotification(notification: Notification): Promise<void> {
-    if (!this.io) return;
+    if (!this.io) {
+      this.logger.warn('SocketIO não configurado, pulando notificação socket');
+      return;
+    }
 
     try {
+      const socketData = {
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        timestamp: notification.createdAt
+      };
+
       // Enviar para usuários específicos
       for (const userId of notification.recipients) {
-        this.io.to(`user:${userId}`).emit('notification', {
-          id: notification.id,
-          type: notification.type,
-          title: notification.title,
-          message: notification.message,
-          data: notification.data,
-          timestamp: notification.createdAt
-        });
+        this.io.to(`user:${userId}`).emit('notification', socketData);
       }
 
       // Broadcast para admins se for urgente
       if (notification.priority === 'urgent') {
-        this.io.to('admins').emit('urgent_notification', notification);
+        this.io.to('admins').emit('urgent_notification', socketData);
       }
 
+      this.logger.debug('Notificação socket enviada', { 
+        id: notification.id,
+        recipients: notification.recipients.length 
+      });
     } catch (error) {
-      this.logger.error('Failed to send socket notification:', error);
+      this.logger.error('Falha ao enviar notificação socket:', error);
+      throw error;
     }
   }
 
   private async sendEmailNotification(notification: Notification): Promise<void> {
     try {
-      // Implementar envio de email baseado no tipo e prioridade
       const emailTemplate = this.getEmailTemplate(notification);
       
-      for (const userId of notification.recipients) {
-        await this.emailService.sendEmail({
-          to: await this.getUserEmail(userId),
-          subject: '', // Will be set by template
+      const emailPromises = notification.recipients.map(async (userId) => {
+        const userEmail = await this.getUserEmail(userId);
+        if (!userEmail) {
+          this.logger.warn(`Email não encontrado para usuário ${userId}`);
+          return;
+        }
+
+        return this.emailService.sendEmail({
+          to: userEmail,
           template: emailTemplate,
           data: {
             title: notification.title,
             message: notification.message,
+            priority: notification.priority,
             ...notification.data
-          }
+          },
+          priority: notification.priority === 'urgent' ? 'high' : 'normal',
+          subject: ''
         });
-      }
+      });
+
+      await Promise.allSettled(emailPromises);
+      
+      this.logger.debug('Notificações email enviadas', { 
+        id: notification.id,
+        recipients: notification.recipients.length 
+      });
     } catch (error) {
-      this.logger.error('Failed to send email notification:', error);
+      this.logger.error('Falha ao enviar notificação email:', error);
+      throw error;
     }
   }
 
   private async sendPushNotification(notification: Notification): Promise<void> {
-    // Implementar push notifications
-    this.logger.info('Push notification would be sent here');
+    // TODO: Implementar push notifications (Firebase, etc.)
+    this.logger.info('Push notification seria enviada aqui', {
+      id: notification.id,
+      title: notification.title
+    });
   }
 
   private async storeNotification(notification: Notification): Promise<void> {
     try {
-      const key = `notification:${notification.id}`;
-      await this.redis.getClient().setex(
-        key,
-        notification.expiresAt ? 
-          Math.floor((notification.expiresAt.getTime() - Date.now()) / 1000) :
-          86400 * 7, // 7 dias por padrão
-        JSON.stringify(notification)
+      // TTL baseado na data de expiração ou padrão de 7 dias
+      const ttl = notification.expiresAt ? 
+        Math.floor((notification.expiresAt.getTime() - Date.now()) / 1000) :
+        86400 * 7;
+
+      if (ttl <= 0) {
+        this.logger.warn('Notificação com TTL expirado, não será armazenada', {
+          id: notification.id
+        });
+        return;
+      }
+
+      // Armazenar a notificação
+      await this.cacheService.set(
+        `notification:${notification.id}`,
+        notification,
+        ttl
       );
 
       // Adicionar à lista de notificações de cada usuário
-      for (const userId of notification.recipients) {
-        await this.redis.getClient().lpush(
-          `user:${userId}:notifications`,
-          notification.id
-        );
-        await this.redis.getClient().expire(`user:${userId}:notifications`, 86400 * 30);
-      }
+      const userPromises = notification.recipients.map(userId => 
+        this.addNotificationToUser(userId, notification.id, ttl)
+      );
+
+      await Promise.allSettled(userPromises);
     } catch (error) {
-      this.logger.error('Failed to store notification:', error);
+      this.logger.error('Falha ao armazenar notificação:', error);
+      throw error;
     }
   }
 
-  public async getUserNotifications(userId: string, limit: number = 20): Promise<Notification[]> {
+  private async addNotificationToUser(userId: string, notificationId: string, ttl: number): Promise<void> {
+    const userNotificationsKey = `user:${userId}:notifications`;
+    
+    // Adicionar notificação à lista do usuário
+    await this.cacheService.getClient().lpush(userNotificationsKey, notificationId);
+    
+    // Manter apenas as últimas 100 notificações
+    await this.cacheService.getClient().ltrim(userNotificationsKey, 0, 99);
+    
+    // Definir TTL para a lista (máximo entre TTL da notificação e 30 dias)
+    const listTtl = Math.max(ttl, 86400 * 30);
+    await this.cacheService.getClient().expire(userNotificationsKey, listTtl);
+  }
+
+  public async getUserNotifications(userId: string, options: {
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+  } = {}): Promise<{
+    notifications: Notification[];
+    total: number;
+    unread: number;
+  }> {
     try {
-      const notificationIds = await this.redis.getClient().lrange(
+      const { limit = 20, offset = 0, unreadOnly = false } = options;
+      
+      const notificationIds = await this.cacheService.getClient().lrange(
         `user:${userId}:notifications`,
-        0,
-        limit - 1
+        offset,
+        offset + limit - 1
       );
 
       const notifications: Notification[] = [];
+      const readNotifications = unreadOnly ? 
+        await this.cacheService.getClient().smembers(`user:${userId}:read_notifications`) :
+        [];
+      const readSet = new Set(readNotifications);
       
       for (const id of notificationIds) {
-        const notificationData = await this.redis.getClient().get(`notification:${id}`);
+        if (unreadOnly && readSet.has(id)) {
+          continue;
+        }
+
+        const notificationData = await this.cacheService.get(`notification:${id}`);
         if (notificationData) {
-          notifications.push(JSON.parse(notificationData));
+          notifications.push(notificationData);
         }
       }
 
-      return notifications;
+      // Contar total e não lidas
+      const totalIds = await this.cacheService.getClient().llen(`user:${userId}:notifications`);
+      const unreadCount = totalIds - readSet.size;
+
+      return {
+        notifications,
+        total: totalIds,
+        unread: Math.max(0, unreadCount)
+      };
     } catch (error) {
-      this.logger.error('Failed to get user notifications:', error);
-      return [];
+      this.logger.error('Falha ao obter notificações do usuário:', error);
+      return { notifications: [], total: 0, unread: 0 };
     }
   }
 
-  public async markAsRead(userId: string, notificationId: string): Promise<void> {
+  public async markAsRead(userId: string, notificationIds: string | string[]): Promise<void> {
     try {
-      await this.redis.getClient().sadd(`user:${userId}:read_notifications`, notificationId);
+      const ids = Array.isArray(notificationIds) ? notificationIds : [notificationIds];
+      
+      if (ids.length === 0) return;
+
+      await this.cacheService.getClient().sadd(`user:${userId}:read_notifications`, ...ids);
+      
+      // Definir TTL para lista de lidas (30 dias)
+      await this.cacheService.getClient().expire(`user:${userId}:read_notifications`, 86400 * 30);
+      
+      this.logger.debug('Notificações marcadas como lidas', {
+        userId,
+        count: ids.length
+      });
     } catch (error) {
-      this.logger.error('Failed to mark notification as read:', error);
+      this.logger.error('Falha ao marcar notificação como lida:', error);
+      throw error;
+    }
+  }
+
+  public async markAllAsRead(userId: string): Promise<void> {
+    try {
+      const notificationIds = await this.cacheService.getClient().lrange(
+        `user:${userId}:notifications`,
+        0,
+        -1
+      );
+
+      if (notificationIds.length > 0) {
+        await this.markAsRead(userId, notificationIds);
+      }
+    } catch (error) {
+      this.logger.error('Falha ao marcar todas as notificações como lidas:', error);
+      throw error;
+    }
+  }
+
+  public async deleteNotification(userId: string, notificationId: string): Promise<void> {
+    try {
+      // Remover da lista do usuário
+      await this.cacheService.getClient().lrem(`user:${userId}:notifications`, 1, notificationId);
+      
+      // Remover da lista de lidas
+      await this.cacheService.getClient().srem(`user:${userId}:read_notifications`, notificationId);
+      
+      this.logger.debug('Notificação removida para usuário', { userId, notificationId });
+    } catch (error) {
+      this.logger.error('Falha ao deletar notificação:', error);
+      throw error;
     }
   }
 
@@ -182,55 +318,55 @@ export class NotificationService {
   }
 
   private getEmailTemplate(notification: Notification): string {
-    switch (notification.type) {
-      case 'info':
-        return 'info-notification';
-      case 'success':
-        return 'success-notification';
-      case 'warning':
-        return 'warning-notification';
-      case 'error':
-        return 'error-notification';
-      default:
-        return 'generic-notification';
+    const templateMap: Record<string, string> = {
+      info: 'info-notification',
+      success: 'success-notification',
+      warning: 'warning-notification',
+      error: 'error-notification'
+    };
+    
+    return templateMap[notification.type] || 'generic-notification';
+  }
+
+  private async getUserEmail(userId: string): Promise<string | null> {
+    try {
+      // Em um caso real, você buscaria o email do banco de dados
+      const { User } = await import('../models/User');
+      const user = await User.findById(userId).select('email');
+      return user?.email || null;
+    } catch (error) {
+      this.logger.error(`Erro ao buscar email do usuário ${userId}:`, error);
+      return null;
     }
   }
 
-  private async getUserEmail(userId: string): Promise<string> {
-    // Implementar busca de email do usuário
-    return `user${userId}@example.com`;
-  }
-}
-
-// src/utils/ApiResponse.ts - Padronização de Respostas
-export class ApiResponse {
-  public static success<T>(data: T, message?: string, meta?: any) {
-    return {
-      success: true,
-      message: message || 'Operation completed successfully',
-      data,
-      meta,
-      timestamp: new Date().toISOString()
-    };
+  /**
+   * Limpar notificações expiradas
+   */
+  public async cleanupExpiredNotifications(): Promise<void> {
+    this.logger.info('Limpeza de notificações expiradas iniciada');
+    
+    // Esta função seria chamada periodicamente via cron job
+    // Por enquanto apenas logga que seria executada
+    
+    this.logger.info('Limpeza de notificações expiradas concluída');
   }
 
-  public static error(message: string, statusCode: number = 500, errors?: any) {
-    return {
-      success: false,
-      message,
-      statusCode,
-      errors,
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  public static paginated<T>(data: T[], pagination: any, message?: string) {
-    return {
-      success: true,
-      message: message || 'Data retrieved successfully',
-      data,
-      pagination,
-      timestamp: new Date().toISOString()
-    };
+  /**
+   * Obter estatísticas de notificações
+   */
+  public async getNotificationStats(timeframe: 'day' | 'week' | 'month' = 'day'): Promise<any> {
+    try {
+      // TODO: Implementar estatísticas baseadas em dados históricos
+      return {
+        sent: 0,
+        read: 0,
+        byType: {},
+        byChannel: {}
+      };
+    } catch (error) {
+      this.logger.error('Erro ao obter estatísticas de notificações:', error);
+      return null;
+    }
   }
 }

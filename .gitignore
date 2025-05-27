@@ -1,37 +1,85 @@
 # Dependencies
-node_modules/
+node_modules
 npm-debug.log*
+yarn-debug.log*
+yarn.lock
 
-# Production builds
-dist/
-build/
+# Build outputs
+dist
+build
 
-# Environment variables
+# Environment files
 .env
 .env.local
 .env.production
+.env.test
 
 # Logs
-logs/
+logs
 *.log
 
+# Coverage directory
+coverage
+
+# Temporary folders
+.tmp
+.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+
+# Test files
+tests
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Uploads and generated files
+uploads/*
+exports/*
+backups/*
+
+# Cache directories
+.cache
+
 # Runtime data
-pids/
+pids
 *.pid
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
+# ESLint and Prettier
+.eslintrc*
+.prettierrc*
+.prettierignore
 
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.temp
+# Husky
+.husky

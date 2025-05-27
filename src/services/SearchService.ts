@@ -1,269 +1,108 @@
-// src/services/SearchService.ts - Serviço de Busca Avançada
-import { Client } from '@elastic/elasticsearch';
-import { LoggerService } from './LoggerService';
-import { IProject } from '../models/Project';
-import { ICertificate } from '../models/Certificate';
+// ===== src/server.ts =====
+import dotenv from 'dotenv';
+import { Bootstrap } from '../bootstrap';
+import { LoggerService } from '../services/LoggerService';
 
-interface SearchResult {
-  id: string;
-  type: 'project' | 'certificate';
-  title: string;
-  description: string;
-  score: number;
-  highlights?: string[];
+// Carregar variáveis de ambiente
+dotenv.config();
+
+const logger = LoggerService.getInstance();
+
+async function startServer() {
+  try {
+    logger.info('🚀 Iniciando servidor Portfolio Backend...');
+    
+    // Verificar Node.js version
+    const nodeVersion = process.version;
+    const requiredVersion = '18.0.0';
+    if (nodeVersion < `v${requiredVersion}`) {
+      throw new Error(`Node.js ${requiredVersion} ou superior é necessário. Versão atual: ${nodeVersion}`);
+    }
+
+    logger.info(`Node.js versão: ${nodeVersion}`);
+    logger.info(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`Porta: ${process.env.PORT || 5000}`);
+    
+    // Verificar variáveis de ambiente críticas
+    const criticalEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+    const missingVars = criticalEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+      throw new Error(`Variáveis de ambiente obrigatórias não definidas: ${missingVars.join(', ')}`);
+    }
+    
+    // Inicializar aplicação através do Bootstrap
+    const app = await Bootstrap.init();
+    
+    // Iniciar servidor
+    await app.start();
+    
+    logger.info(`✅ Servidor rodando na porta ${process.env.PORT || 5000}`);
+    logger.info(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`📚 Documentação API: http://localhost:${process.env.PORT || 5000}/docs`);
+    logger.info(`💾 MongoDB: ${process.env.MONGODB_URI ? 'Conectado' : 'Não configurado'}`);
+    logger.info(`🗄️  Redis: ${process.env.REDIS_HOST ? 'Conectado' : 'Não configurado'}`);
+    
+    // Log de informações adicionais no desenvolvimento
+    if (process.env.NODE_ENV === 'development') {
+      logger.info('🔧 Modo de desenvolvimento ativo');
+      logger.info('📊 Health check: http://localhost:' + (process.env.PORT || 5000) + '/health');
+      logger.info('🔐 Admin login: http://localhost:' + (process.env.PORT || 5000) + '/api/auth/login');
+    }
+    
+  } catch (error) {
+    logger.error('❌ Falha ao iniciar o servidor:', error);
+    
+    // Log adicional para debugging
+    if (error instanceof Error) {
+      logger.error('Stack trace:', error.stack);
+    }
+    
+    // Aguardar um pouco para garantir que logs sejam escritos
+    setTimeout(() => {
+      process.exit(1);
+    }, 1000);
+  }
 }
 
-export class SearchService {
-  private static instance: SearchService;
-  private client!: Client;
-  private logger: LoggerService;
-  private isEnabled: boolean;
-
-  private constructor() {
-  this.logger = LoggerService.getInstance();
-  this.isEnabled = !!process.env.ELASTICSEARCH_URL;
+// Manipuladores de erro não capturado
+process.on('uncaughtException', (error: Error) => {
+  logger.error('🔥 Exceção não capturada:', error);
+  logger.error('Stack:', error.stack);
   
-  if (this.isEnabled) {
-    this.client = new Client({
-      node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200'
-    });
-  }
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('🔥 Promise rejeitada não tratada:', reason);
+  logger.error('Promise:', promise);
+  
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Manipuladores de sinal para graceful shutdown
+const gracefulShutdown = (signal: string) => {
+  logger.info(`📴 Recebido sinal ${signal}. Iniciando shutdown graceful...`);
+  
+  // Aqui você poderia adicionar lógica adicional de limpeza
+  // Por exemplo, fechar conexões de banco de dados, etc.
+  
+  setTimeout(() => {
+    logger.info('👋 Servidor encerrado');
+    process.exit(0);
+  }, 5000); // 5 segundos para cleanup
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Iniciar aplicação
+if (require.main === module) {
+  startServer();
 }
 
-  public static getInstance(): SearchService {
-    if (!SearchService.instance) {
-      SearchService.instance = new SearchService();
-    }
-    return SearchService.instance;
-  }
-//
-  public async searchProjects(query: string, filters?: any): Promise<SearchResult[]> {
-  if (!this.isEnabled) {
-    return this.fallbackSearch(query, 'projects');
-  }
-
-    try {
-      const searchQuery = {
-        index: 'projects',
-        body: {
-          query: {
-            bool: {
-              must: [
-                {
-                  multi_match: {
-                    query,
-                    fields: ['title^3', 'shortDescription^2', 'fullDescription', 'technologies.name', 'tags'],
-                    type: 'best_fields',
-                    fuzziness: 'AUTO'
-                  }
-                }
-              ],
-              filter: filters ? this.buildFilters(filters) : []
-            }
-          },
-          highlight: {
-            fields: {
-              title: {},
-              shortDescription: {},
-              fullDescription: {}
-            }
-          },
-          size: 50
-        }
-      };
-
-      const response = await this.client.search(searchQuery);
-      
-      return response.body.hits.hits.map((hit: any) => ({
-        id: hit._id,
-        type: 'project',
-        title: hit._source.title,
-        description: hit._source.shortDescription,
-        score: hit._score,
-        highlights: hit.highlight ? Object.values(hit.highlight).flat() : []
-      }));
-      
-    } catch (error) {
-      this.logger.error('Elasticsearch search failed:', error);
-       // Temporariamente desabilitado devido a problemas de tipos
-      return this.fallbackSearch(query, 'projects');
-    }
-  }
-
-  public async searchCertificates(query: string): Promise<SearchResult[]> {
-    if (!this.isEnabled) {
-      return this.fallbackSearch(query, 'certificates');
-    }
-
-    try {
-      const searchQuery = {
-        index: 'certificates',
-        body: {
-          query: {
-            multi_match: {
-              query,
-              fields: ['title^3', 'issuer.name^2', 'skills.name', 'tags'],
-              type: 'best_fields',
-              fuzziness: 'AUTO'
-            }
-          },
-          highlight: {
-            fields: {
-              title: {},
-              'issuer.name': {},
-              'skills.name': {}
-            }
-          },
-          size: 20
-        }
-      };
-
-      const response = await this.client.search(searchQuery);
-      
-      return response.body.hits.hits.map((hit: any) => ({
-        id: hit._id,
-        type: 'certificate',
-        title: hit._source.title,
-        description: hit._source.issuer.name,
-        score: hit._score,
-        highlights: hit.highlight ? Object.values(hit.highlight).flat() : []
-      }));
-      
-    } catch (error) {
-      this.logger.error('Elasticsearch search failed:', error);
-      return this.fallbackSearch(query, 'certificates');
-    }
-  }
-
-  public async indexProject(project: IProject): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await this.client.index({
-        index: 'projects',
-        id: project._id.toString(),
-        body: {
-          title: project.title,
-          shortDescription: project.shortDescription,
-          fullDescription: project.fullDescription,
-          technologies: project.technologies,
-          tags: project.tags,
-          category: project.category,
-          status: project.status,
-          featured: project.featured,
-          createdAt: project.createdAt
-        }
-      });
-    } catch (error) {
-      this.logger.error('Failed to index project:', error);
-    }
-  }
-
-  public async updateProject(project: IProject): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await this.client.update({
-        index: 'projects',
-        id: project._id.toString(),
-        body: {
-          doc: {
-            title: project.title,
-            shortDescription: project.shortDescription,
-            fullDescription: project.fullDescription,
-            technologies: project.technologies,
-            tags: project.tags,
-            category: project.category,
-            status: project.status,
-            featured: project.featured,
-            updatedAt: project.updatedAt
-          }
-        }
-      });
-    } catch (error) {
-      this.logger.error('Failed to update project index:', error);
-    }
-  }
-
-  public async removeProject(projectId: string): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await this.client.delete({
-        index: 'projects',
-        id: projectId
-      });
-    } catch (error) {
-      this.logger.error('Failed to remove project from index:', error);
-    }
-  }
-
-  private buildFilters(filters: any): any[] {
-    const elasticFilters = [];
-    
-    if (filters.category) {
-      elasticFilters.push({ term: { category: filters.category } });
-    }
-    
-    if (filters.status) {
-      elasticFilters.push({ term: { status: filters.status } });
-    }
-    
-    if (filters.featured !== undefined) {
-      elasticFilters.push({ term: { featured: filters.featured } });
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      elasticFilters.push({ terms: { tags: filters.tags } });
-    }
-
-    return elasticFilters;
-  }
-
-  private async fallbackSearch(query: string, type: string): Promise<SearchResult[]> {
-    // Implementação de busca fallback usando MongoDB text search
-    this.logger.info(`Using fallback search for: ${query} in ${type}`);
-    
-    try {
-      const { Project } = await import('../models/Project');
-      const { Certificate } = await import('../models/Certificate');
-      
-      if (type === 'projects') {
-        const projects = await Project.find({
-          $text: { $search: query },
-          isActive: true
-        })
-        .select('title shortDescription')
-        .limit(20)
-        .lean();
-
-        return projects.map(p => ({
-          id: p._id.toString(),
-          type: 'project' as const,
-          title: p.title,
-          description: p.shortDescription,
-          score: 1
-        }));
-      } else {
-        const certificates = await Certificate.find({
-          $text: { $search: query },
-          isActive: true
-        })
-        .select('title issuer.name')
-        .limit(20)
-        .lean();
-
-        return certificates.map(c => ({
-          id: c._id.toString(),
-          type: 'certificate' as const,
-          title: c.title,
-          description: c.issuer.name,
-          score: 1
-        }));
-      }
-    } catch (error) {
-      this.logger.error('Fallback search failed:', error);
-      return [];
-    }
-  }
-}
+export default startServer;

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{subject}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3B82F6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3B82F6;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            color: #3B82F6;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Portfolio</div>
+            <p>Sistema de Gerenciamento</p>
+        </div>
+
+        <div class="content">
+            <h2>{{title}}</h2>
+            
+            {{#if user.name}}
+            <p>Olá <strong>{{user.name}}</strong>,</p>
+            {{else}}
+            <p>Olá,</p>
+            {{/if}}
+
+            <p>{{message}}</p>
+
+            {{#if actionUrl}}
+            <div style="text-align: center;">
+                <a href="{{actionUrl}}" class="button">{{actionText}}</a>
+            </div>
+            {{/if}}
+
+            {{#if additionalInfo}}
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4>Informações Adicionais:</h4>
+                <ul>
+                {{#each additionalInfo}}
+                    <li>{{this}}</li>
+                {{/each}}
+                </ul>
+            </div>
+            {{/if}}
+
+            <p>Se você tiver alguma dúvida, não hesite em entrar em contato conosco.</p>
+        </div>
+
+        <div class="footer">
+            <p>Atenciosamente,<br><strong>Equipe Portfolio</strong></p>
+            
+            <div class="social-links">
+                <a href="https://github.com/seu-usuario">GitHub</a>
+                <a href="https://linkedin.com/in/seu-perfil">LinkedIn</a>
+                <a href="https://portfolio.com">Website</a>
+            </div>
+
+            <p>
+                <small>
+                    Este é um email automático, por favor não responda.<br>
+                    Se você não deseja mais receber estes emails, 
+                    <a href="{{unsubscribeUrl}}">clique aqui para cancelar</a>.
+                </small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
