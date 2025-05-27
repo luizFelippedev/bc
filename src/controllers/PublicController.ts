@@ -91,10 +91,11 @@ export class PublicController {
         }).lean();
         
         if (!project) {
-          return res.status(404).json(
-            ApiResponse.error('Projeto não encontrado', 404)
-          );
-        }
+  res.status(404).json(
+    ApiResponse.error('Projeto não encontrado', 404)
+  );
+  return; // Sem return res
+}
         
         // Cache por 15 minutos
         await this.cacheService.set(cacheKey, project, 900);
@@ -107,7 +108,7 @@ export class PublicController {
       await this.analyticsService.trackEvent({
         eventType: 'project_view',
         projectId: project._id.toString(),
-        sessionId: req.sessionID || req.ip,
+        sessionId: req.sessionID || req.ip || 'anonymous',
         userAgent: req.get('user-agent'),
         ip: req.ip
       });
@@ -201,7 +202,7 @@ export class PublicController {
         projectId,
         certificateId,
         page,
-        sessionId: req.sessionID || req.ip,
+        sessionId: req.sessionID || req.ip || 'anonymous',
         userAgent: req.get('user-agent'),
         ip: req.ip,
         referrer: req.get('referer')

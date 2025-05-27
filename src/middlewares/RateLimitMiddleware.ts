@@ -48,7 +48,7 @@ export class RateLimitMiddleware {
         const key = keyGenerator(req);
         await limiter.consume(key);
         next();
-      } catch (error) {
+      } catch (error: any) {
         if (error.msBeforeNext) {
           res.set('Retry-After', String(Math.ceil(error.msBeforeNext / 1000)));
           res.set('X-RateLimit-Limit', String(points));
@@ -123,9 +123,4 @@ export class RateLimitMiddleware {
       blockDuration: routeOptions.blockDuration
     });
   }
-}
-
-// Adicione ao ApiError.ts
-public static tooManyRequests(message: string = 'Muitas requisições') {
-  return new ApiError(429, message);
 }

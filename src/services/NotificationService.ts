@@ -100,9 +100,9 @@ export class NotificationService {
       const emailTemplate = this.getEmailTemplate(notification);
       
       for (const userId of notification.recipients) {
-        await this.emailService.sendTemplatedEmail({
+        await this.emailService.sendEmail({
           to: await this.getUserEmail(userId),
-          subject: notification.title,
+          subject: '', // Will be set by template
           template: emailTemplate,
           data: {
             title: notification.title,

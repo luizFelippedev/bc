@@ -188,7 +188,7 @@ export class HealthCheckService {
       };
     }
   }
-  
+
   public async getStatusSummary(): Promise<{ 
     status: 'healthy' | 'unhealthy' | 'degraded';
     uptime: number; 
@@ -200,5 +200,9 @@ export class HealthCheckService {
       uptime: status.uptime,
       environment: status.environment
     };
+  }
+
+  public async getStatus(): Promise<HealthStatus> {
+    return this.checkHealth();
   }
 }

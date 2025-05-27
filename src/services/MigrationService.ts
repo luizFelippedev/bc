@@ -92,13 +92,13 @@ export class MigrationService {
     return module.migration || module.default;
   }
 
-  private async getExecutedMigrations(): Promise<Migration[]> {
-    const connection = this.database.getConnection();
-    if (connection) {
-      return await connection.db.collection('migrations').find({}).toArray();
-    }
-    return [];
+  private async getExecutedMigrations(): Promise<any[]> {
+  const connection = this.database.getConnection();
+  if (connection) {
+    return await connection.db.collection('migrations').find({}).toArray();
   }
+  return [];
+}
 
   private async markMigrationAsExecuted(migration: Migration): Promise<void> {
     const connection = this.database.getConnection();

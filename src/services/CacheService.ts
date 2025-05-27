@@ -91,9 +91,9 @@ export class CacheService {
       this.logger.warn('Conexão Redis fechada');
     });
 
-    this.client.on('reconnecting', (delay) => {
-      this.logger.info(`Reconectando Redis em ${delay}ms...`);
-    });
+    this.client.on('reconnecting', (delay: number) => {
+  this.logger.info(`Reconectando Redis em ${delay}ms...`);
+});
 
     this.client.on('end', () => {
       this.isConnected = false;
@@ -135,14 +135,23 @@ export class CacheService {
       return null;
     }
   }
-
-  /**
+  
+/**
    * Definir valor no cache
    */
-  public async set(key: string, value: any, options?: CacheOptions): Promise<boolean> {
+  public async set(key: string, value: any, ttlOrOptions?: number | CacheOptions): Promise<boolean> {
     try {
-      const fullKey = this.buildKey(key, options?.namespace);
-      const ttl = options?.ttl || this.defaultTTL;
+      let options: CacheOptions = {};
+      
+      // Se for um número, é o TTL
+      if (typeof ttlOrOptions === 'number') {
+        options.ttl = ttlOrOptions;
+      } else if (ttlOrOptions) {
+        options = ttlOrOptions;
+      }
+      
+      const fullKey = this.buildKey(key, options.namespace);
+      const ttl = options.ttl || this.defaultTTL;
       const serializedValue = JSON.stringify(value);
 
       if (ttl > 0) {
@@ -158,6 +167,7 @@ export class CacheService {
       return false;
     }
   }
+  
 
   /**
    * Excluir chave do cache

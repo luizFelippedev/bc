@@ -6,7 +6,6 @@ import { User } from '../models/User';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
-import json2csv from 'json2csv';
 
 interface ExportOptions {
   format: 'json' | 'csv' | 'xlsx';
@@ -110,7 +109,7 @@ export class ExportService {
       
       // Nunca exportar senhas
       const fields = options.fields?.filter(f => f !== 'password') || [];
-      if (!fields.includes('-password') && !fields.includes('-password')) {
+      if (!fields.includes('-password')) {
         fields.push('-password');
       }
       
@@ -180,17 +179,29 @@ export class ExportService {
       // Preparar dados para CSV (achatar objetos aninhados)
       const flattenedData = data.map(item => this.flattenObject(item));
       
-      // Usar biblioteca json2csv
+      // Criar CSV manualmente (já que json2csv pode ter problemas)
       const fields = options.fields || Object.keys(flattenedData[0] || {});
-      const opts = {
-        fields,
-        delimiter: options.delimiter || ',',
-        header: options.includeHeaders !== false,
-        quote: '"'
-      };
+      const delimiter = options.delimiter || ',';
       
-      const parser = new json2csv.Parser(opts);
-      const csv = parser.parse(flattenedData);
+      let csv = '';
+      
+      // Headers
+      if (options.includeHeaders !== false) {
+        csv += fields.join(delimiter) + '\n';
+      }
+      
+      // Data rows
+      for (const row of flattenedData) {
+        const values = fields.map(field => {
+          const value = row[field];
+          // Escape values with quotes if they contain delimiter or quotes
+          if (typeof value === 'string' && (value.includes(delimiter) || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value ?? '';
+        });
+        csv += values.join(delimiter) + '\n';
+      }
       
       await fs.writeFile(filePath, csv);
     } catch (error) {

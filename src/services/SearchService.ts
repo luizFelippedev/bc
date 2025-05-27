@@ -15,20 +15,20 @@ interface SearchResult {
 
 export class SearchService {
   private static instance: SearchService;
-  private client: Client;
+  private client!: Client;
   private logger: LoggerService;
   private isEnabled: boolean;
 
   private constructor() {
-    this.logger = LoggerService.getInstance();
-    this.isEnabled = !!process.env.ELASTICSEARCH_URL;
-    
-    if (this.isEnabled) {
-      this.client = new Client({
-        node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200'
-      });
-    }
+  this.logger = LoggerService.getInstance();
+  this.isEnabled = !!process.env.ELASTICSEARCH_URL;
+  
+  if (this.isEnabled) {
+    this.client = new Client({
+      node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200'
+    });
   }
+}
 
   public static getInstance(): SearchService {
     if (!SearchService.instance) {
@@ -36,11 +36,11 @@ export class SearchService {
     }
     return SearchService.instance;
   }
-
+//
   public async searchProjects(query: string, filters?: any): Promise<SearchResult[]> {
-    if (!this.isEnabled) {
-      return this.fallbackSearch(query, 'projects');
-    }
+  if (!this.isEnabled) {
+    return this.fallbackSearch(query, 'projects');
+  }
 
     try {
       const searchQuery = {
@@ -85,6 +85,7 @@ export class SearchService {
       
     } catch (error) {
       this.logger.error('Elasticsearch search failed:', error);
+       // Temporariamente desabilitado devido a problemas de tipos
       return this.fallbackSearch(query, 'projects');
     }
   }

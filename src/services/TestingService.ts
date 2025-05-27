@@ -61,15 +61,16 @@ export class TestingService {
 
   private async clearTestDatabase(): Promise<void> {
     const connection = this.database.getConnection();
-if (connection) {
-  const collections = await connection.db.listCollections().toArray();
-  
-  for (const collection of collections) {
-    if (!collection.name.startsWith('system.')) {
-      await connection.db.collection(collection.name).deleteMany({});
+    if (connection) {
+      const collections = await connection.db.listCollections().toArray();
+      
+      for (const collection of collections) {
+        if (!collection.name.startsWith('system.')) {
+          await connection.db.collection(collection.name).deleteMany({});
+        }
+      }
     }
-  } 
-}
+  }
 
   private async clearTestCache(): Promise<void> {
     const client = this.redis.getClient();
@@ -96,14 +97,17 @@ if (connection) {
           { name: 'React', category: 'frontend', level: 'primary' },
           { name: 'Node.js', category: 'backend', level: 'primary' }
         ],
-        media: {
-          featuredImage: 'https://example.com/image.jpg',
+        images: {
+          featured: 'https://example.com/image.jpg',
           gallery: []
         },
-        timeline: {
-          startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-03-01')
+        date: {
+          start: new Date('2024-01-01'),
+          end: new Date('2024-03-01')
         },
+        links: {},
+        tags: [],
+        views: 0,
         isActive: true
       }
     ];
@@ -115,15 +119,11 @@ if (connection) {
       {
         title: 'Test Certificate',
         issuer: { name: 'Test Academy' },
-        dates: { issued: new Date('2024-01-01') },
-        level: 'professional',
-        type: 'technical',
-        skills: [
-          { name: 'JavaScript', category: 'Programming', proficiencyLevel: 'advanced' }
-        ],
-        media: {
-          certificate: 'https://example.com/cert.pdf'
-        },
+        date: { issued: new Date('2024-01-01') },
+        level: 'intermediate',
+        category: 'technical',
+        skills: ['JavaScript'],
+        image: 'https://example.com/cert.jpg',
         featured: true,
         isActive: true
       }
@@ -138,13 +138,6 @@ if (connection) {
         email: 'admin@test.com',
         password: 'password123',
         role: 'admin',
-        isActive: true
-      },
-      {
-        name: 'Test User',
-        email: 'user@test.com',
-        password: 'password123',
-        role: 'user',
         isActive: true
       }
     ];

@@ -1,4 +1,7 @@
 // src/services/PerformanceMonitoringService.ts - Monitoramento de Performance
+import { LoggerService } from './LoggerService';
+import { RedisService } from './RedisService';
+
 interface PerformanceMetric {
   name: string;
   value: number;

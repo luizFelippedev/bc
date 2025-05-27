@@ -110,10 +110,10 @@ export class AnalyticsService {
         
         // Projetos visualizados recentemente
         const recentProjectViews = await Analytics.find({
-          eventType: 'project_view',
-          projectId: { $exists: true },
-          createdAt: { $gte: fifteenMinutesAgo }
-        }).populate('projectId', 'title slug');
+  eventType: 'project_view',
+  projectId: { $exists: true },
+  createdAt: { $gte: fifteenMinutesAgo }
+}).populate<{ projectId: { title: string; slug: string } }>('projectId', 'title slug');
         
         stats = {
           activeVisitors: activeSessions.size,

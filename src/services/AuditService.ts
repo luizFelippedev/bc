@@ -1,5 +1,6 @@
 // src/services/AuditService.ts - Serviço de Auditoria
 import { Schema, model, Document } from 'mongoose';
+import { LoggerService } from './LoggerService';
 
 interface IAuditLog extends Document {
   userId?: string;
@@ -172,7 +173,7 @@ export class AuditService {
             }
           }
         },
-        { $sort: { total: -1 } }
+        { $sort: { total: -1 as 1 | -1 } }
       ];
 
       const stats = await AuditLog.aggregate(pipeline);

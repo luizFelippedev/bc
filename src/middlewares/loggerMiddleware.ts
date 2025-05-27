@@ -2,7 +2,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { LoggerService } from '../services/LoggerService';
 import onFinished from 'on-finished';
-import onHeaders from 'on-headers';
 
 export class LoggerMiddleware {
   private static logger = LoggerService.getInstance();
@@ -15,14 +14,18 @@ export class LoggerMiddleware {
       const startTime = process.hrtime();
       
       // Capturar quando os headers são enviados
-      onHeaders(res, () => {
-        const headersSentTime = this.calculateDuration(startTime);
+      const originalSend = res.send;
+      let headersSentTime: number;
+      
+      res.send = function(data: any) {
+        headersSentTime = LoggerMiddleware.calculateDuration(startTime);
         res.locals.headersSentTime = headersSentTime;
-      });
+        return originalSend.call(this, data);
+      };
       
       // Capturar quando a resposta é finalizada
       onFinished(res, () => {
-        const totalTime = this.calculateDuration(startTime);
+        const totalTime = LoggerMiddleware.calculateDuration(startTime);
         
         // Adicionar informações adicionais
         const requestInfo = {
@@ -37,11 +40,11 @@ export class LoggerMiddleware {
           cookies: Object.keys(req.cookies || {}).length > 0 ? Object.keys(req.cookies) : undefined
         };
 
-        this.logger.logRequest(req, res, totalTime);
+        LoggerMiddleware.logger.logRequest(req, res, totalTime);
 
         // Se houver erro, registrar informações adicionais
         if (res.statusCode >= 400) {
-          this.logger.warn(`Resposta de erro ${res.statusCode}`, requestInfo);
+          LoggerMiddleware.logger.warn(`Resposta de erro ${res.statusCode}`, requestInfo);
         }
       });
       
@@ -62,7 +65,7 @@ export class LoggerMiddleware {
    */
   public static requestId() {
     return (req: Request, res: Response, next: NextFunction) => {
-      const id = req.headers['x-request-id'] || this.generateRequestId();
+      const id = req.headers['x-request-id'] || LoggerMiddleware.generateRequestId();
       req.id = id as string;
       res.setHeader('X-Request-ID', id);
       next();

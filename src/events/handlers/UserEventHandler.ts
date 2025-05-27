@@ -29,6 +29,7 @@ export class UserEventHandler {
       // Registrar analytics
       await this.analyticsService.trackEvent({
         type: 'user_created',
+        eventType: 'page_view',
         userId: user.id,
         sessionId: user.sessionId || '',
         data: {

@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "moduleResolution": "node",
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
@@ -23,7 +24,9 @@
       "@utils/*": ["utils/*"],
       "@types/*": ["types/*"],
       "@config/*": ["config/*"]
-    }
+    },
+    "types": ["node", "express"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]

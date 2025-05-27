@@ -203,4 +203,5 @@ export class App {
       this.logger.error('Erro durante o shutdown:', error);
       throw error;
     }
+  }
 }

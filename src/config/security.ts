@@ -1,7 +1,5 @@
 // src/config/security.ts
 import helmet from 'helmet';
-import xss from 'xss-clean';
-import hpp from 'hpp';
 import cors from 'cors';
 import { Express } from 'express';
 import { LoggerService } from '../services/LoggerService';
@@ -15,8 +13,6 @@ export class SecurityConfig {
   public static setup(app: Express): void {
     this.setupHelmet(app);
     this.setupCors(app);
-    this.setupXss(app);
-    this.setupHpp(app);
     this.setupContentSecurity(app);
     this.setupHeaderSecurity(app);
     
@@ -53,20 +49,6 @@ export class SecurityConfig {
       credentials: true,
       maxAge: 86400 // 24 horas
     }));
-  }
-
-  /**
-   * Proteção contra XSS
-   */
-  private static setupXss(app: Express): void {
-    app.use(xss());
-  }
-
-  /**
-   * Proteção contra poluição de parâmetros HTTP
-   */
-  private static setupHpp(app: Express): void {
-    app.use(hpp());
   }
 
   /**

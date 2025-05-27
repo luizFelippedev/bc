@@ -14,7 +14,7 @@ export class AuthController {
    * Login de administrador
    * POST /api/auth/login
    */
-  public async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+   public async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email, password } = req.body;
       
@@ -60,25 +60,29 @@ export class AuthController {
     }
   }
 
-  /**
-   * Verificar token JWT
-   * GET /api/auth/verify
-   */
-  public async verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = await User.findById(req.user?.id).select('-password');
       
       if (!user || !user.isActive) {
-        throw ApiError.unauthorized('Token inválido ou usuário inativo');
+        throw ApiError.unauthorized('Usuário não encontrado');
       }
       
+      // Gerar novo token
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        config.jwt.secret,
+        { expiresIn: config.jwt.expiresIn }
+      );
+      
       res.json(
-        ApiResponse.success({ user }, 'Token válido')
+        ApiResponse.success({ token }, 'Token renovado com sucesso')
       );
     } catch (error) {
       next(error);
     }
   }
+
 
   /**
    * Logout (invalidação do token no cliente)

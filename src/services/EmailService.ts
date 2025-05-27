@@ -1,10 +1,10 @@
 // src/services/EmailService.ts - Serviço de Email Avançado
-import nodemailer from 'nodemailer';
 import { LoggerService } from './LoggerService';
 import { RedisService } from './RedisService';
 import handlebars from 'handlebars';
 import fs from 'fs/promises';
 import path from 'path';
+import * as nodemailer from 'nodemailer';
 
 interface EmailTemplate {
   subject: string;
@@ -26,7 +26,7 @@ interface EmailOptions {
 
 export class EmailService {
   private static instance: EmailService;
-  private transporter: nodemailer.Transporter;
+  private transporter!: nodemailer.Transporter;
   private logger: LoggerService;
   private redis: RedisService;
   private templates: Map<string, handlebars.TemplateDelegate> = new Map();
@@ -46,7 +46,7 @@ export class EmailService {
   }
 
   private setupTransporter(): void {
-    this.transporter = nodemailer.createTransporter({
+  this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: false,
@@ -138,14 +138,14 @@ export class EmailService {
       }
 
     } catch (error) {
-      this.logger.error('Failed to send email:', error);
+  this.logger.error('Failed to send email:', error);
       
       await this.logEmailSent({
         to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
         subject: options.subject,
         template: options.template,
         status: 'failed',
-        error: error.message
+        error: (error as Error).message
       });
       
       throw error;
