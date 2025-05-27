@@ -23,20 +23,15 @@ export class DatabaseService {
       this.logger.info('MongoDB já está conectado');
       return;
     }
-
     if (this.isConnecting) {
       this.logger.info('Conexão com MongoDB já está em andamento');
       return;
     }
-
     try {
       this.isConnecting = true;
-      
       await mongoose.connect(config.database.mongodb.uri, config.database.mongodb.options);
-      
       this.connection = mongoose.connection;
       this.setupEventHandlers();
-      
       this.logger.info('✅ MongoDB conectado com sucesso');
     } catch (error) {
       this.logger.error('❌ Falha ao conectar com MongoDB:', error);

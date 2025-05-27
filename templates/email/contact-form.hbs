@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Contato - {{subject}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border-top: 5px solid #3B82F6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #3B82F6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3B82F6;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+        .contact-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .contact-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .field-group {
+            margin-bottom: 20px;
+        }
+        .field-label {
+            font-weight: bold;
+            color: #e0e0e0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .field-value {
+            font-size: 16px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        .message-section {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 4px solid #3B82F6;
+            margin: 20px 0;
+        }
+        .message-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3B82F6;
+            margin-bottom: 15px;
+        }
+        .message-content {
+            font-size: 16px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .metadata {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .metadata h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .metadata-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .metadata-value {
+            color: #6c757d;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 0 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .button.secondary {
+            background: linear-gradient(135deg, #6B7280, #4B5563);
+        }
+        .priority-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .priority-high {
+            background-color: #FEE2E2;
+            color: #EF4444;
+        }
+        .priority-normal {
+            background-color: #DBEAFE;
+            color: #3B82F6;
+        }
+        .priority-low {
+            background-color: #F3F4F6;
+            color: #6B7280;
+        }
+        .footer {
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        .footer a {
+            color: #3B82F6;
+            text-decoration: none;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 12px;
+            font-style: italic;
+            margin-top: 15px;
+        }
+        .alert {
+            background-color: #FEF3C7;
+            border: 1px solid #F59E0B;
+            color: #92400E;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .alert.spam-warning {
+            background-color: #FEE2E2;
+            border-color: #EF4444;
+            color: #991B1B;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .contact-info {
+                padding: 20px;
+            }
+            .button {
+                display: block;
+                margin: 10px 0;
+            }
+            .metadata-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .metadata-value {
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">💼 Portfolio</div>
+            <div class="subtitle">Novo Contato Recebido</div>
+        </div>
+
+        {{#if priority}}
+        <div class="priority-indicator priority-{{priority}}">
+            📧 Prioridade: {{priority}}
+        </div>
+        {{/if}}
+
+        <div class="contact-info">
+            <div class="contact-title">📞 Informações do Contato</div>
+            
+            <div class="field-group">
+                <div class="field-label">Nome</div>
+                <div class="field-value">{{name}}</div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label">E-mail</div>
+                <div class="field-value">
+                    <a href="mailto:{{email}}" style="color: white; text-decoration: underline;">
+                        {{email}}
+                    </a>
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <div class="field-label">Assunto</div>
+                <div class="field-value">{{subject}}</div>
+            </div>
+            
+            {{#if phone}}
+            <div class="field-group">
+                <div class="field-label">Telefone</div>
+                <div class="field-value">{{phone}}</div>
+            </div>
+            {{/if}}
+            
+            {{#if company}}
+            <div class="field-group">
+                <div class="field-label">Empresa</div>
+                <div class="field-value">{{company}}</div>
+            </div>
+            {{/if}}
+        </div>
+
+        <div class="message-section">
+            <div class="message-title">💬 Mensagem</div>
+            <div class="message-content">{{message}}</div>
+        </div>
+
+        {{#if spamWarning}}
+        <div class="alert spam-warning">
+            <strong>⚠️ Aviso de Spam</strong><br>
+            Esta mensagem foi marcada como possível spam. Verifique cuidadosamente antes de responder.
+            <br><small>Razão: {{spamReason}}</small>
+        </div>
+        {{/if}}
+
+        {{#if isImportant}}
+        <div class="alert">
+            <strong>⭐ Mensagem Importante</strong><br>
+            Esta mensagem foi marcada como importante baseada no conteúdo ou remetente.
+        </div>
+        {{/if}}
+
+        <div class="metadata">
+            <h4>📊 Informações Técnicas</h4>
+            
+            <div class="metadata-item">
+                <span class="metadata-label">Data/Hora:</span>
+                <span class="metadata-value">{{formatDate createdAt 'DD/MM/YYYY HH:mm:ss'}}</span>
+            </div>
+            
+            {{#if ip}}
+            <div class="metadata-item">
+                <span class="metadata-label">IP do Remetente:</span>
+                <span class="metadata-value">{{ip}}</span>
+            </div>
+            {{/if}}
+            
+            {{#if location}}
+            <div class="metadata-item">
+                <span class="metadata-label">Localização:</span>
+                <span class="metadata-value">{{location.city}}, {{location.country}}</span>
+            </div>
+            {{/if}}
+            
+            {{#if userAgent}}
+            <div class="metadata-item">
+                <span class="metadata-label">Navegador:</span>
+                <span class="metadata-value">{{browser}} - {{device}}</span>
+            </div>
+            {{/if}}
+            
+            {{#if referrer}}
+            <div class="metadata-item">
+                <span class="metadata-label">Origem:</span>
+                <span class="metadata-value">{{referrer}}</span>
+            </div>
+            {{/if}}
+            
+            <div class="metadata-item">
+                <span class="metadata-label">ID da Mensagem:</span>
+                <span class="metadata-value">{{id}}</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="mailto:{{email}}?subject=Re: {{subject}}" class="button">
+                📧 Responder
+            </a>
+            
+            {{#if adminUrl}}
+            <a href="{{adminUrl}}/contacts/{{id}}" class="button secondary">
+                👀 Ver no Admin
+            </a>
+            {{/if}}
+        </div>
+
+        {{#if autoResponse}}
+        <div class="alert">
+            <strong>🤖 Resposta Automática</strong><br>
+            Uma resposta automática foi enviada para {{email}} confirmando o recebimento da mensagem.
+        </div>
+        {{/if}}
+
+        {{#if relatedContacts}}
+        <div class="metadata">
+            <h4>📝 Contatos Relacionados</h4>
+            <p>Este e-mail já entrou em contato {{relatedContacts}} vez(es) anteriormente.</p>
+        </div>
+        {{/if}}
+
+        <div class="footer">
+            <p>Esta mensagem foi enviada através do formulário de contato do seu portfolio.</p>
+            
+            <p>
+                <a href="{{siteUrl}}">Visitar Site</a> | 
+                <a href="{{adminUrl}}">Área Administrativa</a>
+            </p>
+            
+            <div class="timestamp">
+                Notificação gerada automaticamente em {{formatDate now 'DD/MM/YYYY HH:mm:ss'}}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

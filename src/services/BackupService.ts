@@ -1,11 +1,11 @@
-
-// src/services/BackupService.ts - Serviço de Backup
+// src/services/BackupService.ts
+import path from 'path';
+import fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Storage } from '@google-cloud/storage';
-import AWS from 'aws-sdk';
-import path from 'path';
-import fs from 'fs';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import cron from 'node-cron';
 import { LoggerService } from './LoggerService';
 
 const execAsync = promisify(exec);
@@ -14,7 +14,7 @@ export class BackupService {
   private static instance: BackupService;
   private logger: LoggerService;
   private storage: Storage | null = null;
-  private s3: AWS.S3 | null = null;
+  private s3: S3Client | null = null;
 
   private constructor() {
     this.logger = LoggerService.getInstance();
@@ -29,20 +29,20 @@ export class BackupService {
   }
 
   private initializeCloudStorage(): void {
-    // Google Cloud Storage
     if (process.env.GOOGLE_CLOUD_KEYFILE) {
       this.storage = new Storage({
         keyFilename: process.env.GOOGLE_CLOUD_KEYFILE,
-        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID
+        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
       });
     }
 
-    // AWS S3
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-      this.s3 = new AWS.S3({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION || 'us-east-1'
+      this.s3 = new S3Client({
+        region: process.env.AWS_REGION || 'us-east-1',
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
       });
     }
   }
@@ -50,91 +50,66 @@ export class BackupService {
   public async createDatabaseBackup(): Promise<string> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const backupFileName = `portfolio-backup-${timestamp}.gz`;
+      const backupFileName = `portfolio-db-${timestamp}.gz`;
       const backupPath = path.join(process.cwd(), 'backups', backupFileName);
 
-      // Criar diretório de backup se não existir
-      const backupDir = path.dirname(backupPath);
-      if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
+      if (!fs.existsSync(path.dirname(backupPath))) {
+        fs.mkdirSync(path.dirname(backupPath), { recursive: true });
       }
 
-      // MongoDB backup
       const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio_enterprise';
-      const mongoCommand = `mongodump --uri="${mongoUri}" --archive="${backupPath}" --gzip`;
-      
-      await execAsync(mongoCommand);
+      const command = `mongodump --uri="${mongoUri}" --archive="${backupPath}" --gzip`;
+      await execAsync(command);
 
-      this.logger.info(`Database backup created: ${backupPath}`);
+      this.logger.info(`📦 Database backup criado: ${backupPath}`);
       return backupPath;
     } catch (error) {
-      this.logger.error('Failed to create database backup:', error);
+      this.logger.error('❌ Erro ao criar backup do banco de dados:', error);
       throw error;
     }
   }
 
-  public async uploadBackupToCloud(backupPath: string): Promise<void> {
-    try {
-      const fileName = path.basename(backupPath);
-      
-      // Upload para Google Cloud Storage
-      if (this.storage && process.env.GOOGLE_CLOUD_BACKUP_BUCKET) {
+  public async uploadBackupToCloud(filePath: string): Promise<void> {
+    const fileName = path.basename(filePath);
+
+    // Google Cloud
+    if (this.storage && process.env.GOOGLE_CLOUD_BACKUP_BUCKET) {
+      try {
         const bucket = this.storage.bucket(process.env.GOOGLE_CLOUD_BACKUP_BUCKET);
-        await bucket.upload(backupPath, {
-          destination: `database-backups/${fileName}`,
+        await bucket.upload(filePath, {
+          destination: `backups/${fileName}`,
           metadata: {
             metadata: {
               createdAt: new Date().toISOString(),
-              type: 'database-backup'
-            }
-          }
+              type: 'backup',
+            },
+          },
         });
-        
-        this.logger.info(`Backup uploaded to Google Cloud Storage: ${fileName}`);
+        this.logger.info(`☁️ Enviado para Google Cloud: ${fileName}`);
+      } catch (error) {
+        this.logger.error('❌ Falha ao enviar para Google Cloud:', error);
       }
-
-      // Upload para AWS S3
-      if (this.s3 && process.env.AWS_BACKUP_BUCKET) {
-        const fileContent = fs.readFileSync(backupPath);
-        
-        await this.s3.upload({
-          Bucket: process.env.AWS_BACKUP_BUCKET,
-          Key: `database-backups/${fileName}`,
-          Body: fileContent,
-          Metadata: {
-            createdAt: new Date().toISOString(),
-            type: 'database-backup'
-          }
-        }).promise();
-        
-        this.logger.info(`Backup uploaded to AWS S3: ${fileName}`);
-      }
-    } catch (error) {
-      this.logger.error('Failed to upload backup to cloud:', error);
-      throw error;
     }
-  }
 
-  public async createFullBackup(): Promise<void> {
-    try {
-      this.logger.info('Starting full backup process...');
-      
-      // Backup do banco de dados
-      const backupPath = await this.createDatabaseBackup();
-      
-      // Upload para cloud storage
-      await this.uploadBackupToCloud(backupPath);
-      
-      // Backup de arquivos estáticos
-      await this.backupStaticFiles();
-      
-      // Limpeza de backups antigos locais
-      await this.cleanupOldBackups();
-      
-      this.logger.info('Full backup completed successfully');
-    } catch (error) {
-      this.logger.error('Full backup failed:', error);
-      throw error;
+    // AWS S3
+    if (this.s3 && process.env.AWS_BACKUP_BUCKET) {
+      try {
+        const fileBuffer = fs.readFileSync(filePath);
+        await this.s3.send(
+          new PutObjectCommand({
+            Bucket: process.env.AWS_BACKUP_BUCKET!,
+            Key: `backups/${fileName}`,
+            Body: fileBuffer,
+            Metadata: {
+              createdAt: new Date().toISOString(),
+              type: 'backup',
+            },
+          })
+        );
+        this.logger.info(`☁️ Enviado para AWS S3: ${fileName}`);
+      } catch (error) {
+        this.logger.error('❌ Falha ao enviar para AWS S3:', error);
+      }
     }
   }
 
@@ -143,17 +118,14 @@ export class BackupService {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const archiveName = `static-files-${timestamp}.tar.gz`;
       const archivePath = path.join(process.cwd(), 'backups', archiveName);
-      
-      // Compactar arquivos estáticos
+
       const command = `tar -czf "${archivePath}" uploads/ public/`;
       await execAsync(command);
-      
-      // Upload para cloud storage
+
       await this.uploadBackupToCloud(archivePath);
-      
-      this.logger.info('Static files backup completed');
+      this.logger.info('🗂️ Backup dos arquivos estáticos concluído');
     } catch (error) {
-      this.logger.error('Failed to backup static files:', error);
+      this.logger.error('❌ Erro ao fazer backup de arquivos estáticos:', error);
       throw error;
     }
   }
@@ -162,36 +134,49 @@ export class BackupService {
     try {
       const backupDir = path.join(process.cwd(), 'backups');
       const files = fs.readdirSync(backupDir);
-      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 dias
+      const maxAge = 7 * 24 * 60 * 60 * 1000;
       const now = Date.now();
-      
+
       for (const file of files) {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
-        
+
         if (now - stats.mtime.getTime() > maxAge) {
           fs.unlinkSync(filePath);
-          this.logger.info(`Cleaned up old backup: ${file}`);
+          this.logger.info(`🧹 Backup antigo removido: ${file}`);
         }
       }
     } catch (error) {
-      this.logger.error('Failed to cleanup old backups:', error);
+      this.logger.error('❌ Erro ao limpar backups antigos:', error);
+    }
+  }
+
+  public async createFullBackup(): Promise<void> {
+    try {
+      this.logger.info('🚀 Iniciando backup completo...');
+
+      const dbBackupPath = await this.createDatabaseBackup();
+      await this.uploadBackupToCloud(dbBackupPath);
+
+      await this.backupStaticFiles();
+      await this.cleanupOldBackups();
+
+      this.logger.info('✅ Backup completo finalizado com sucesso');
+    } catch (error) {
+      this.logger.error('❌ Falha no backup completo:', error);
     }
   }
 
   public async scheduleBackups(): Promise<void> {
-    // Backup diário às 2h da manhã
-    const schedule = require('node-cron');
-    
-    schedule.schedule('0 2 * * *', async () => {
-      this.logger.info('Starting scheduled backup...');
+    cron.schedule('0 2 * * *', async () => {
+      this.logger.info('🕑 Iniciando backup agendado...');
       try {
         await this.createFullBackup();
       } catch (error) {
-        this.logger.error('Scheduled backup failed:', error);
+        this.logger.error('❌ Erro no backup agendado:', error);
       }
     });
 
-    this.logger.info('Backup scheduler initialized');
+    this.logger.info('🗓️ Agendador de backup iniciado (diário às 2h)');
   }
 }

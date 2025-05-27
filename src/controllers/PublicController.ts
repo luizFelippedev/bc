@@ -76,7 +76,7 @@ export class PublicController {
    * Obter projeto por slug
    * GET /api/public/projects/:slug
    */
-  public async getProjectBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getProjectBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const { slug } = req.params;
       
@@ -248,9 +248,10 @@ export class PublicController {
       // Validar tipos de evento permitidos
       const allowedEvents = ['page_view', 'project_view', 'certificate_view', 'contact'];
       if (!allowedEvents.includes(eventType)) {
-        return res.status(400).json(
+        res.status(400).json(
           ApiResponse.error('Tipo de evento inválido', 400)
         );
+        return;
       }
       
       await this.analyticsService.trackEvent({
@@ -279,9 +280,10 @@ export class PublicController {
       const { q: query, type = 'all', limit = 20 } = req.query;
       
       if (!query || typeof query !== 'string' || query.trim().length < 2) {
-        return res.status(400).json(
+        res.status(400).json(
           ApiResponse.error('Query de busca deve ter pelo menos 2 caracteres', 400)
         );
+        return;
       }
       
       const cacheKey = `public:search:${query}:${type}:${limit}`;

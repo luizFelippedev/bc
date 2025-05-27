@@ -4,31 +4,80 @@
   "description": "Portfolio Backend API - Sistema completo para gerenciamento de portfolio profissional",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only --clear src/index.ts",
-    "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
-    "start:prod": "npm run build && npm run start",
-    "test": "jest --detectOpenHandles",
-    "test:watch": "jest --watch --detectOpenHandles",
-    "test:coverage": "jest --coverage --detectOpenHandles",
-    "test:integration": "jest --config jest.integration.config.js --detectOpenHandles",
-    "lint": "eslint src/**/*.ts --max-warnings 0",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,js}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js}\"",
+    "dev": "ts-node-dev --respawn --transpile-only --clear --ignore-watch node_modules src/index.ts",
+    "dev:debug": "ts-node-dev --inspect --respawn --transpile-only --clear src/index.ts",
+    "build": "rimraf dist && tsc",
+    "build:prod": "npm run clean && npm run build && npm run build:docs",
+    "build:docs": "typedoc --out docs/api src",
+    "clean": "rimraf dist coverage .nyc_output logs/*.log",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts tests/**/*.ts --max-warnings 0",
+    "lint:fix": "eslint src/**/*.ts tests/**/*.ts --fix",
+    "lint:check": "eslint --print-config src/index.ts",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\" \"*.{js,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\" \"tests/**/*.{ts,js,json}\"",
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch --detectOpenHandles",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
+    "test:unit": "jest --testPathPattern=unit --detectOpenHandles",
+    "test:integration": "jest --testPathPattern=integration --detectOpenHandles --runInBand",
+    "test:e2e": "jest --testPathPattern=e2e --detectOpenHandles --runInBand",
+    "test:ci": "jest --coverage --ci --forceExit --detectOpenHandles --maxWorkers=2",
     "migrate": "ts-node src/scripts/migrate.ts",
     "migrate:create": "ts-node src/scripts/create-migration.ts",
     "migrate:rollback": "ts-node src/scripts/rollback-migration.ts",
+    "migrate:status": "ts-node src/scripts/migration-status.ts",
     "seed": "ts-node src/scripts/seed.ts",
+    "seed:dev": "NODE_ENV=development ts-node src/scripts/seed.ts",
+    "seed:test": "NODE_ENV=test ts-node src/scripts/seed.ts",
     "init-admin": "ts-node src/scripts/initializeAdmin.ts",
+    "reset-db": "ts-node src/scripts/reset-database.ts",
+    "backup": "ts-node src/scripts/backup.ts",
+    "restore": "ts-node src/scripts/restore.ts",
     "docker:build": "docker build -t portfolio-backend .",
+    "docker:build:prod": "docker build -t portfolio-backend:prod --target production .",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up --build",
-    "docker:prod": "docker-compose up -d --build",
-    "docker:down": "docker-compose down",
+    "docker:prod": "docker-compose -f docker-compose.yml up -d --build",
+    "docker:down": "docker-compose down && docker-compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v --remove-orphans && docker system prune -f",
     "health-check": "curl -f http://localhost:5000/health || exit 1",
-    "clean": "rimraf dist node_modules/.cache",
-    "prepare": "husky install"
+    "logs": "tail -f logs/combined.log",
+    "logs:error": "tail -f logs/error.log",
+    "logs:clear": "rm -f logs/*.log",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop portfolio-backend",
+    "pm2:restart": "pm2 restart portfolio-backend",
+    "pm2:logs": "pm2 logs portfolio-backend",
+    "pm2:monit": "pm2 monit",
+    "security:check": "npm audit --audit-level high",
+    "security:fix": "npm audit fix",
+    "security:snyk": "snyk test",
+    "deps:check": "npm-check -u",
+    "deps:update": "npm update",
+    "deps:outdated": "npm outdated",
+    "prepare": "husky install",
+    "precommit": "lint-staged",
+    "prepush": "npm run test:ci",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
+    "serve:prod": "NODE_ENV=production npm start",
+    "serve:staging": "NODE_ENV=staging npm start",
+    "analyze": "npm run build && npx webpack-bundle-analyzer dist/stats.json",
+    "debug": "node --inspect=0.0.0.0:9229 dist/index.js",
+    "profile": "node --prof dist/index.js",
+    "clinic:doctor": "clinic doctor -- node dist/index.js",
+    "clinic:bubbleprof": "clinic bubbleprof -- node dist/index.js",
+    "load-test": "artillery run tests/load/basic-load-test.yml",
+    "stress-test": "artillery run tests/load/stress-test.yml",
+    "benchmark": "node scripts/benchmark.js",
+    "docs:serve": "http-server docs -p 8080",
+    "docs:generate": "typedoc && echo 'Documentação gerada em docs/'",
+    "setup": "chmod +x scripts/init.sh && ./scripts/init.sh",
+    "install:global": "npm install -g pm2 nodemon ts-node",
+    "postinstall": "npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run test:ci"
   },
   "keywords": [
     "portfolio",
@@ -40,7 +89,10 @@
     "redis",
     "express",
     "jwt",
-    "socket.io"
+    "socket.io",
+    "rest-api",
+    "cms",
+    "admin-panel"
   ],
   "author": {
     "name": "Portfolio Developer",
@@ -50,18 +102,18 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/portfolio-backend.git"
+    "url": "https://github.com/seu-usuario/portfolio-backend.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/portfolio-backend/issues"
+    "url": "https://github.com/seu-usuario/portfolio-backend/issues"
   },
-  "homepage": "https://github.com/your-username/portfolio-backend#readme",
+  "homepage": "https://github.com/seu-usuario/portfolio-backend#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "dependencies": {
-    "@types/xlsx": "^0.0.36",
+    "@aws-sdk/client-s3": "^3.817.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",
     "connect-redis": "^7.1.1",
@@ -73,9 +125,11 @@
     "express-session": "^1.18.1",
     "helmet": "^7.2.0",
     "ioredis": "^5.6.1",
+    "ioredis-mock": "^8.9.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.16.0",
+    "mongodb": ">=5.0.0",
+    "mongodb-memory-server": "^10.1.4",
     "mongoose": "^7.8.7",
     "multer": "^1.4.5-lts.1",
     "on-finished": "^2.4.1",
@@ -96,12 +150,10 @@
     "@types/express": "^4.17.22",
     "@types/express-rate-limit": "^6.0.2",
     "@types/express-session": "^1.18.1",
-    "@types/hpp": "^0.2.6",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.17.50",
-    "@types/nodemailer": "^6.4.17",
     "@types/on-finished": "^2.3.4",
     "@types/supertest": "^2.0.16",
     "@types/swagger-jsdoc": "^6.0.4",
@@ -121,24 +173,80 @@
     "ts-jest": "^29.3.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "typedoc": "^0.25.4",
     "typescript": "^5.8.3"
+  },
+  "optionalDependencies": {
+    "@elastic/elasticsearch": "^9.0.2",
+    "@google-cloud/storage": "^7.16.0",
+    "artillery": "^2.0.5",
+    "aws-sdk": "^2.1692.0",
+    "clinic": "^12.1.0",
+    "handlebars": "^4.7.8",
+    "json2csv": "^6.0.0-alpha.2",
+    "node-cron": "^4.0.7",
+    "nodemailer": "^7.0.3",
+    "npm-check": "^6.0.1",
+    "semantic-release": "^22.0.12",
+    "snyk": "^1.1261.0",
+    "xlsx": "^0.18.5"
+  },
+  "peerDependencies": {
+    "mongodb": ">=5.0.0",
+    "redis": ">=6.0.0"
   },
   "lint-staged": {
     "src/**/*.{ts,js}": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "tests/**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
     ]
   },
-  "optionalDependencies": {
-    "@elastic/elasticsearch": "^9.0.2",
-    "@google-cloud/storage": "^7.16.0",
-    "aws-sdk": "^2.1692.0",
-    "handlebars": "^4.7.8",
-    "hpp": "^0.2.3",
-    "json2csv": "^6.0.0-alpha.2",
-    "node-cron": "^4.0.7",
-    "nodemailer": "^7.0.3",
-    "xlsx": "^0.18.5",
-    "xss-clean": "^0.1.4"
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run test:ci",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.ts"
+    ],
+    "testTimeout": 30000,
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/index.ts",
+      "!src/types/*.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src"
+    ],
+    "ext": "ts",
+    "exec": "ts-node src/index.ts"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }

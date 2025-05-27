@@ -6,7 +6,7 @@ import { projectController } from '../controllers/ProjectController';
 import { certificateController } from '../controllers/CertificateController';
 import { configurationController } from '../controllers/ConfigurationController';
 import { FileUploadService } from '../services/FileUploadService';
-import { AuthMiddleware } from '../middlewares/AuthMiddleware';
+import { authMiddleware } from '../middlewares/AuthMiddleware';
 
 const router = Router();
 const upload = multer(FileUploadService.getInstance().getMulterConfig());
@@ -14,11 +14,11 @@ const upload = multer(FileUploadService.getInstance().getMulterConfig());
 // Rotas de autenticação
 router.post('/auth/login', authController.login.bind(authController));
 router.post('/auth/logout', authController.logout.bind(authController));
-router.get('/auth/verify', AuthMiddleware.authenticate, authController.verifyToken.bind(authController));
+router.get('/auth/verify', authMiddleware.authenticate, authController.verifyToken.bind(authController));
 
 // Proteger todas as rotas abaixo com autenticação e autorização
-router.use(AuthMiddleware.authenticate);
-router.use(AuthMiddleware.authorize(['admin']));
+router.use(authMiddleware.authenticate);
+router.use(authMiddleware.authorize(['admin']));
 
 // Dashboard e analytics
 router.get('/dashboard', adminController.getDashboardData.bind(adminController));

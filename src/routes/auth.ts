@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { authController } from '../controllers/AuthController';
 import { ValidationMiddleware } from '../middlewares/ValidationMiddleware';
-import { AuthMiddleware } from '../middlewares/AuthMiddleware';
+import { authMiddleware } from '../middlewares/AuthMiddleware';
 import { RateLimitMiddleware } from '../middlewares/RateLimitMiddleware';
 
 const router = Router();
@@ -17,17 +17,17 @@ router.post('/login',
 );
 
 router.post('/logout', 
-  AuthMiddleware.authenticate,
+  authMiddleware.authenticate,
   authController.logout.bind(authController)
 );
 
 router.get('/verify', 
-  AuthMiddleware.authenticate,
+  authMiddleware.authenticate,
   authController.verifyToken.bind(authController)
 );
 
 router.post('/refresh', 
-  AuthMiddleware.authenticate,
+  authMiddleware.authenticate,
   authController.refreshToken.bind(authController)
 );
 

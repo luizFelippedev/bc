@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header.info { border-color: #3B82F6; }
+        .header.success { border-color: #10B981; }
+        .header.warning { border-color: #F59E0B; }
+        .header.error { border-color: #EF4444; }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .icon {
+            font-size: 48px;
+            margin: 10px 0;
+        }
+        .icon.info { color: #3B82F6; }
+        .icon.success { color: #10B981; }
+        .icon.warning { color: #F59E0B; }
+        .icon.error { color: #EF4444; }
+        
+        .content {
+            margin-bottom: 30px;
+        }
+        .notification-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .notification-title.info { color: #3B82F6; }
+        .notification-title.success { color: #10B981; }
+        .notification-title.warning { color: #F59E0B; }
+        .notification-title.error { color: #EF4444; }
+        
+        .message {
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .details {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+        .details.info { border-color: #3B82F6; }
+        .details.success { border-color: #10B981; }
+        .details.warning { border-color: #F59E0B; }
+        .details.error { border-color: #EF4444; }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+            color: white !important;
+        }
+        .button.info { background-color: #3B82F6; }
+        .button.success { background-color: #10B981; }
+        .button.warning { background-color: #F59E0B; }
+        .button.error { background-color: #EF4444; }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        .priority-low { background-color: #E5E7EB; color: #6B7280; }
+        .priority-normal { background-color: #DBEAFE; color: #3B82F6; }
+        .priority-high { background-color: #FEF3C7; color: #F59E0B; }
+        .priority-urgent { background-color: #FEE2E2; color: #EF4444; }
+        
+        .footer {
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .metadata {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        .metadata-item {
+            margin: 5px 0;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .social-links a.info { color: #3B82F6; }
+        .social-links a.success { color: #10B981; }
+        .social-links a.warning { color: #F59E0B; }
+        .social-links a.error { color: #EF4444; }
+        
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .notification-title {
+                font-size: 20px;
+            }
+            .button {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header {{type}}">
+            <div class="logo">Portfolio</div>
+            <div class="icon {{type}}">
+                {{#if (eq type 'info')}}ℹ️{{/if}}
+                {{#if (eq type 'success')}}✅{{/if}}
+                {{#if (eq type 'warning')}}⚠️{{/if}}
+                {{#if (eq type 'error')}}❌{{/if}}
+            </div>
+        </div>
+
+        <div class="content">
+            {{#if priority}}
+            <div class="priority-badge priority-{{priority}}">
+                {{priority}}
+            </div>
+            {{/if}}
+            
+            <h2 class="notification-title {{type}}">{{title}}</h2>
+            
+            <div class="message">
+                {{message}}
+            </div>
+
+            {{#if details}}
+            <div class="details {{type}}">
+                <h4>Detalhes:</h4>
+                {{#if (typeof details 'object')}}
+                    <ul>
+                    {{#each details}}
+                        <li><strong>{{@key}}:</strong> {{this}}</li>
+                    {{/each}}
+                    </ul>
+                {{else}}
+                    <p>{{details}}</p>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            {{#if actionUrl}}
+            <div style="text-align: center;">
+                <a href="{{actionUrl}}" class="button {{type}}">
+                    {{#if actionText}}{{actionText}}{{else}}Visualizar{{/if}}
+                </a>
+            </div>
+            {{/if}}
+
+            {{#if recommendations}}
+            <div class="details {{type}}">
+                <h4>Recomendações:</h4>
+                <ul>
+                {{#each recommendations}}
+                    <li>{{this}}</li>
+                {{/each}}
+                </ul>
+            </div>
+            {{/if}}
+
+            {{#if relatedData}}
+            <div class="details {{type}}">
+                <h4>Informações Relacionadas:</h4>
+                {{#each relatedData}}
+                <div class="metadata-item">
+                    <strong>{{@key}}:</strong> {{this}}
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+        </div>
+
+        {{#if showMetadata}}
+        <div class="metadata">
+            <div class="metadata-item">
+                <strong>ID da Notificação:</strong> {{notificationId}}
+            </div>
+            {{#if timestamp}}
+            <div class="metadata-item">
+                <strong>Enviado em:</strong> {{formatDate timestamp}}
+            </div>
+            {{/if}}
+            {{#if source}}
+            <div class="metadata-item">
+                <strong>Origem:</strong> {{source}}
+            </div>
+            {{/if}}
+            {{#if category}}
+            <div class="metadata-item">
+                <strong>Categoria:</strong> {{category}}
+            </div>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        <div class="footer">
+            <p>Esta é uma notificação automática do sistema Portfolio.</p>
+            
+            <div class="social-links">
+                <a href="https://github.com/seu-usuario" class="{{type}}">GitHub</a>
+                <a href="https://linkedin.com/in/seu-perfil" class="{{type}}">LinkedIn</a>
+                <a href="https://portfolio.com" class="{{type}}">Website</a>
+            </div>
+
+            <p>
+                <small>
+                    Se você não deseja mais receber estas notificações, 
+                    <a href="{{unsubscribeUrl}}">clique aqui para cancelar</a>.
+                </small>
+            </p>
+            
+            {{#if timestamp}}
+            <div class="timestamp">
+                Enviado em: {{formatDate timestamp 'DD/MM/YYYY HH:mm:ss'}}
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</body>
+</html>

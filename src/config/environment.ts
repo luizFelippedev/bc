@@ -47,14 +47,14 @@ export const config: AppConfig = {
   
   database: {
     mongodb: {
-      uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio',
+      uri: process.env.MONGODB_URI || '',
       options: {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        bufferCommands: false,
-        bufferMaxEntries: 0,
-      } as ConnectOptions
+      }
     },
     redis: {
       host: process.env.REDIS_HOST || 'localhost',
@@ -71,10 +71,10 @@ export const config: AppConfig = {
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
+    secret: process.env.JWT_SECRET || '',
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
     refreshToken: {
-      secret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret',
+      secret: process.env.JWT_REFRESH_SECRET || '',
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
     }
   },

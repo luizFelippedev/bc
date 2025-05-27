@@ -1,0 +1,379 @@
+# .github/workflows/ci-cd.yml - GitHub Actions CI/CD Pipeline
+name: Portfolio Backend CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18.x'
+  MONGODB_VERSION: '6.0'
+  REDIS_VERSION: '7'
+
+jobs:
+  # ============================================
+  # JOB: ANÁLISE DE CÓDIGO E TESTES
+  # ============================================
+  test:
+    name: 🧪 Testes e Análise
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test
+          MONGO_INITDB_ROOT_PASSWORD: test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongo
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependências
+      run: |
+        npm ci
+        npm install -g @types/node
+    
+    - name: 🔍 Análise de segurança (npm audit)
+      run: npm audit --audit-level=high
+      continue-on-error: true
+    
+    - name: 🎨 Verificar formatação
+      run: npm run format:check
+    
+    - name: 🔧 Lint do código
+      run: npm run lint
+    
+    - name: 🔍 Verificação de tipos TypeScript
+      run: npm run typecheck
+    
+    - name: 🧪 Executar testes unitários
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://test:test@localhost:27017/portfolio_test?authSource=admin
+        REDIS_URL: redis://localhost:6379/1
+        JWT_SECRET: test-jwt-secret-for-ci
+      run: npm run test:coverage
+    
+    - name: 🧪 Executar testes de integração
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://test:test@localhost:27017/portfolio_integration_test?authSource=admin
+        REDIS_URL: redis://localhost:6379/2
+        JWT_SECRET: test-jwt-secret-for-ci
+      run: npm run test:integration
+    
+    - name: 📊 Upload cobertura para Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: 📈 SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      continue-on-error: true
+
+  # ============================================
+  # JOB: BUILD E VERIFICAÇÃO
+  # ============================================
+  build:
+    name: 🏗️ Build e Verificação
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependências
+      run: npm ci
+    
+    - name: 🏗️ Build do projeto
+      run: npm run build
+    
+    - name: 📁 Verificar arquivos gerados
+      run: |
+        ls -la dist/
+        echo "Build files:"
+        find dist -name "*.js" | wc -l
+    
+    - name: 💾 Cache do build
+      uses: actions/cache@v3
+      with:
+        path: dist
+        key: build-${{ github.sha }}
+        restore-keys: |
+          build-
+
+  # ============================================
+  # JOB: TESTES E2E E PERFORMANCE
+  # ============================================
+  e2e-tests:
+    name: 🎭 Testes E2E e Performance
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependências
+      run: npm ci
+    
+    - name: 🏗️ Build do projeto
+      run: npm run build
+    
+    - name: 🚀 Iniciar aplicação
+      env:
+        NODE_ENV: test
+        MONGODB_URI: mongodb://localhost:27017/portfolio_e2e
+        REDIS_URL: redis://localhost:6379/3
+        JWT_SECRET: test-jwt-secret-for-e2e
+        PORT: 5000
+      run: |
+        npm start &
+        sleep 10
+        curl -f http://localhost:5000/health || exit 1
+    
+    - name: 🧪 Executar testes E2E
+      run: npm run test:e2e
+    
+    - name: ⚡ Teste de performance
+      run: |
+        npm install -g artillery
+        timeout 60s npm run load-test || true
+    
+    - name: 📊 Benchmark personalizado
+      run: npm run benchmark
+      continue-on-error: true
+
+  # ============================================
+  # JOB: ANÁLISE DE SEGURANÇA
+  # ============================================
+  security:
+    name: 🔒 Análise de Segurança
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🔍 Snyk Security Scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+      continue-on-error: true
+    
+    - name: 🔐 CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript
+    
+    - name: 🔍 Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  # ============================================
+  # JOB: BUILD DOCKER
+  # ============================================
+  docker:
+    name: 🐳 Build Docker
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🔑 Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: 🏷️ Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: portfolio/backend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+    
+    - name: 🏗️ Build e Push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: production
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # ============================================
+  # JOB: DEPLOY STAGING
+  # ============================================
+  deploy-staging:
+    name: 🚀 Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [docker, security]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🚀 Deploy to Staging
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        script: |
+          cd /var/www/portfolio-backend-staging
+          git pull origin develop
+          docker-compose down
+          docker-compose pull
+          docker-compose up -d
+          docker-compose exec -T app npm run migrate
+    
+    - name: 🧪 Health Check Staging
+      run: |
+        sleep 30
+        curl -f ${{ secrets.STAGING_URL }}/health
+
+  # ============================================
+  # JOB: DEPLOY PRODUCTION
+  # ============================================
+  deploy-production:
+    name: 🚀 Deploy Production
+    runs-on: ubuntu-latest
+    needs: [docker, security, deploy-staging]
+    if: github.event_name == 'release'
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🚀 Deploy to Production
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.PRODUCTION_HOST }}
+        username: ${{ secrets.PRODUCTION_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_KEY }}
+        script: |
+          cd /var/www/portfolio-backend
+          git pull origin main
+          docker-compose -f docker-compose.yml down
+          docker-compose -f docker-compose.yml pull
+          docker-compose -f docker-compose.yml up -d
+          docker-compose -f docker-compose.yml exec -T app npm run migrate
+    
+    - name: 🧪 Health Check Production
+      run: |
+        sleep 30
+        curl -f ${{ secrets.PRODUCTION_URL }}/health
+    
+    - name: 📊 Post-deploy monitoring
+      run: |
+        # Aguardar 2 minutos e verificar métricas
+        sleep 120
+        curl -f ${{ secrets.PRODUCTION_URL }}/health/detailed
+
+  # ============================================
+  # JOB: NOTIFICAÇÕES
+  # ============================================
+  notify:
+    name: 📢 Notificações
+    runs-on: ubuntu-latest
+    needs: [test, build, docker]
+    if: always()
+    
+    steps:
+    - name: 📧 Slack Notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      if: always()
+    
+    - name: 📧 Email Notification (falhas)
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: 'CI/CD Failure - Portfolio Backend'
+        body: 'Pipeline failed for ${{ github.ref }}. Check GitHub Actions for details.'
+        to: ${{ secrets.ADMIN_EMAIL }}
+      if: failure()
