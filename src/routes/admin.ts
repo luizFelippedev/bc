@@ -6,7 +6,7 @@ import { projectController } from '../controllers/ProjectController';
 import { certificateController } from '../controllers/CertificateController';
 import { configurationController } from '../controllers/ConfigurationController';
 import { FileUploadService } from '../services/FileUploadService';
-import { AuthMiddleware } from '@/middlewares/AuditMiddleware';
+import { AuthMiddleware } from '../middlewares/AuthMiddleware';
 
 const router = Router();
 const upload = multer(FileUploadService.getInstance().getMulterConfig());

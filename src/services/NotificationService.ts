@@ -1,7 +1,7 @@
 // src/services/NotificationService.ts - Sistema de Notificações
 import { Server as SocketIOServer } from 'socket.io';
 import { RedisService } from './RedisService';
-import { EmailService } from '@services/EmailService';
+import { EmailService } from './EmailService';
 import { LoggerService } from './LoggerService';
 
 interface Notification {

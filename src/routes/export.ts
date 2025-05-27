@@ -1,14 +1,14 @@
 // src/routes/export.ts
 import { Router } from 'express';
 import { exportController } from '../controllers/ExportController';
-import { authMiddleware } from '../middlewares/AuthMiddleware';
+import { AuthMiddleware } from '../middlewares/AuthMiddleware';
 import { RateLimitMiddleware } from '../middlewares/RateLimitMiddleware';
 
 const router = Router();
 
 // Todas as rotas de exportação requerem autenticação e autorização de admin
-router.use(authMiddleware.authenticate);
-router.use(authMiddleware.authorize(['admin']));
+router.use(AuthMiddleware.authenticate);
+router.use(AuthMiddleware.authorize(['admin']));
 
 // Limite de taxa específico para exportações (mais restritivo)
 router.use(RateLimitMiddleware.forRoute({

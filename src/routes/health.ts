@@ -1,7 +1,7 @@
 // src/routes/health.ts
 import { Router } from 'express';
 import { healthController } from '../controllers/HealthController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { AuthMiddleware } from '../middlewares/AuthMiddleware';
 
 const router = Router();
 
@@ -10,14 +10,14 @@ router.get('/', healthController.getHealth.bind(healthController));
 
 // Rotas protegidas - apenas para administradores
 router.get('/detailed', 
-  authMiddleware.authenticate, 
-  authMiddleware.authorize(['admin']), 
+  AuthMiddleware.authenticate, 
+  AuthMiddleware.authorize(['admin']), 
   healthController.getDetailedHealth.bind(healthController)
 );
 
 router.get('/check', 
-  authMiddleware.authenticate, 
-  authMiddleware.authorize(['admin']), 
+  AuthMiddleware.authenticate, 
+  AuthMiddleware.authorize(['admin']), 
   healthController.checkHealth.bind(healthController)
 );
 

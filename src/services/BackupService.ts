@@ -6,6 +6,7 @@ import { Storage } from '@google-cloud/storage';
 import AWS from 'aws-sdk';
 import path from 'path';
 import fs from 'fs';
+import { LoggerService } from './LoggerService';
 
 const execAsync = promisify(exec);
 

@@ -1,4 +1,8 @@
 // src/middleware/PerformanceMiddleware.ts - Middleware de Performance
+import { Request, Response, NextFunction } from 'express';
+import { PerformanceMonitoringService } from '../services/PerformanceMonitoringService';
+import { LoggerService } from '../services/LoggerService';
+
 export class PerformanceMiddleware {
   private static performanceService = PerformanceMonitoringService.getInstance();
 

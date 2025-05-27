@@ -60,17 +60,16 @@ export class TestingService {
   }
 
   private async clearTestDatabase(): Promise<void> {
-    const mongo = this.database.getMongo();
-    if (mongo) {
-      const collections = await mongo.db.listCollections().toArray();
-      
-      for (const collection of collections) {
-        if (!collection.name.startsWith('system.')) {
-          await mongo.db.collection(collection.name).deleteMany({});
-        }
-      }
+    const connection = this.database.getConnection();
+if (connection) {
+  const collections = await connection.db.listCollections().toArray();
+  
+  for (const collection of collections) {
+    if (!collection.name.startsWith('system.')) {
+      await connection.db.collection(collection.name).deleteMany({});
     }
-  }
+  } 
+}
 
   private async clearTestCache(): Promise<void> {
     const client = this.redis.getClient();

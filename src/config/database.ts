@@ -37,20 +37,3 @@ export const closeDatabase = async (): Promise<void> => {
   }
 };
 
-// src/config/redis.ts - Redis connection
-import { createClient } from 'redis';
-import { logger } from '../utils/logger';
-
-export const redisClient = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-export const connectRedis = async (): Promise<void> => {
-  try {
-    await redisClient.connect();
-    logger.info('✅ Redis connected successfully');
-  } catch (error) {
-    logger.error('❌ Redis connection failed:', error);
-    throw error;
-  }
-};
