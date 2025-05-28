@@ -1,7 +1,9 @@
-# Multi-stage build para otimização de produção
+# ================================
+# Estágio base
+# ================================
 FROM node:18-alpine AS base
 
-# Instalar dependências necessárias para módulos nativos
+# Instalar dependências para pacotes nativos
 RUN apk add --no-cache \
     python3 \
     make \
@@ -21,9 +23,7 @@ COPY tsconfig.json ./
 FROM base AS development
 
 # Instalar todas as dependências (incluindo devDependencies)
-RUN npm ci --include=dev  
-
-RUN npm install --ignore-scripts && \
+RUN npm ci --include=dev --ignore-scripts && \
     npm cache clean --force
 
 # Copiar código fonte
@@ -33,7 +33,7 @@ COPY . .
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Criar diretórios necessários com permissões
+# Criar diretórios com permissões apropriadas
 RUN mkdir -p uploads logs exports backups && \
     chown -R nodejs:nodejs /app
 
@@ -41,7 +41,7 @@ USER nodejs
 
 EXPOSE 5000
 
-# Health check
+# Health check (modo dev)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
@@ -52,10 +52,7 @@ CMD ["dumb-init", "npm", "run", "dev"]
 # ================================
 FROM base AS build
 
-# Instalar apenas dependencies de produção
-RUN npm ci --only=production --ignore-scripts &&
-
-# Instalar devDependencies temporariamente para build
+# Instalar todas as dependências (para build)
 RUN npm ci --include=dev --ignore-scripts
 
 # Copiar código fonte
@@ -69,10 +66,7 @@ RUN npm run build && \
 # ================================
 # Estágio de produção
 # ================================
-FROM node:18-alpine AS production
-
-# Instalar dumb-init para gerenciamento de processos
-RUN apk add --no-cache dumb-init
+FROM base AS production
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs && \
@@ -80,20 +74,19 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /app
 
-# Copiar aplicação buildada
+# Copiar aplicação já buildada do estágio anterior
 COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=nodejs:nodejs /app/package*.json ./
 
-# Copiar templates e arquivos estáticos necessários
+# Copiar arquivos extras necessários
 COPY --chown=nodejs:nodejs templates ./templates
 COPY --chown=nodejs:nodejs migrations ./migrations
 
-# Criar diretórios necessários com permissões corretas
+# Criar diretórios com permissões corretas
 RUN mkdir -p uploads logs exports backups && \
     chown -R nodejs:nodejs uploads logs exports backups
 
-# Mudar para usuário não-root
 USER nodejs
 
 EXPOSE 5000
@@ -102,7 +95,6 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
-# Usar dumb-init para gerenciamento adequado de sinais
 CMD ["dumb-init", "node", "dist/index.js"]
 
 # ================================
@@ -110,12 +102,8 @@ CMD ["dumb-init", "node", "dist/index.js"]
 # ================================
 FROM development AS test
 
-# Instalar dependências de teste
-RUN npm ci --include=dev
-
-# Copiar configurações de teste
+# Copiar configs de teste
 COPY jest.config.js ./
 COPY jest.integration.config.js ./
 
-# Executar testes
 CMD ["npm", "test"]
