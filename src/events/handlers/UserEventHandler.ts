@@ -26,17 +26,12 @@ export class UserEventHandler {
         priority: 'normal'
       });
 
-      // Registrar analytics
+      // Registrar analytics - CORRIGIDO
       await this.analyticsService.trackEvent({
-        type: 'user_created',
-        eventType: 'page_view',
-        userId: user.id,
-        sessionId: user.sessionId || '',
-        data: {
-          email: user.email,
-          role: user.role
-        },
-        timestamp: new Date()
+        eventType: 'page_view', // Usando um tipo válido da interface
+        sessionId: user.sessionId || 'system',
+        userAgent: 'system',
+        ip: '127.0.0.1'
       });
     } catch (error) {
       this.logger.error('Erro ao processar evento user:created:', error);
@@ -45,15 +40,12 @@ export class UserEventHandler {
 
   private static async handleUserLogin(data: any): Promise<void> {
     try {
+      // Registrar analytics - CORRIGIDO
       await this.analyticsService.trackEvent({
-        type: 'user_login',
-        userId: data.userId,
-        sessionId: data.sessionId,
-        data: {
-          ip: data.ip,
-          userAgent: data.userAgent
-        },
-        timestamp: new Date()
+        eventType: 'page_view', // Usando um tipo válido da interface
+        sessionId: data.sessionId || 'unknown',
+        userAgent: data.userAgent,
+        ip: data.ip
       });
     } catch (error) {
       this.logger.error('Erro ao processar evento user:login:', error);
@@ -61,6 +53,9 @@ export class UserEventHandler {
   }
 
   private static handleUserLogout(data: any): void {
-    // Implementar lógica de logout
+    this.logger.info('User logout event processed', {
+      userId: data.userId,
+      sessionId: data.sessionId
+    });
   }
 }

@@ -21,7 +21,10 @@ COPY tsconfig.json ./
 FROM base AS development
 
 # Instalar todas as dependências (incluindo devDependencies)
-RUN npm ci --include=dev
+RUN npm ci --include=dev  
+
+RUN npm install --ignore-scripts && \
+    npm cache clean --force
 
 # Copiar código fonte
 COPY . .
@@ -50,8 +53,7 @@ CMD ["dumb-init", "npm", "run", "dev"]
 FROM base AS build
 
 # Instalar apenas dependencies de produção
-RUN npm ci --only=production --ignore-scripts && \
-    npm cache clean --force
+RUN npm ci --only=production --ignore-scripts &&
 
 # Instalar devDependencies temporariamente para build
 RUN npm ci --include=dev --ignore-scripts

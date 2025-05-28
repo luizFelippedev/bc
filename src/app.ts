@@ -1,11 +1,11 @@
 // ===== src/app.ts =====
-import express, { Application } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import { createServer, Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import RedisStore from 'connect-redis';
+import ConnectRedis from 'connect-redis';
 import path from 'path';
 import cors from 'cors';
 
@@ -66,8 +66,8 @@ export class App {
     // Logging de requisições
     this.app.use(LoggerMiddleware.requestLogger());
     
-    // Compressão de resposta
-    this.app.use(compression());
+    // Compressão de resposta - CORRIGIDO
+    this.app.use(compression() as express.RequestHandler);
     
     // Trust proxy (para obter IP real atrás de proxies)
     this.app.set('trust proxy', 1);
@@ -79,8 +79,9 @@ export class App {
     // Cookies
     this.app.use(cookieParser(config.session?.secret));
     
-    // Configurar session com Redis se habilitado
+    // Configurar session com Redis se habilitado - CORRIGIDO
     if (config.session?.enabled && redisClient) {
+      const RedisStore = ConnectRedis(session);
       this.app.use(session({
         store: new RedisStore({ client: redisClient }),
         secret: config.session.secret,
@@ -95,7 +96,7 @@ export class App {
     }
     
     // Headers de segurança básicos
-    this.app.use((req, res, next) => {
+    this.app.use((req: Request, res: Response, next: NextFunction) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -105,13 +106,14 @@ export class App {
     // Servir arquivos estáticos
     this.app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
     
-    // Swagger API docs
-    this.app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    // Swagger API docs - CORRIGIDO
+    this.app.use('/docs', swaggerUi.serve);
+    this.app.get('/docs', swaggerUi.setup(swaggerSpec));
   }
 
   private setupRoutes(): void {
     // Endpoint de health check simples
-    this.app.get('/health', async (req, res) => {
+    this.app.get('/health', async (req: Request, res: Response) => {
       try {
         const status = await this.healthService.getStatusSummary();
         res.status(status.status === 'healthy' ? 200 : 503).json(status);
@@ -130,7 +132,7 @@ export class App {
     this.app.use('/api/admin', adminRoutes);
     
     // Rota raiz
-    this.app.get('/', (req, res) => {
+    this.app.get('/', (req: Request, res: Response) => {
       res.json({
         name: 'Portfolio API',
         version: process.env.npm_package_version || '1.0.0',

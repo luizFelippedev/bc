@@ -7,6 +7,11 @@ import { ApiError } from '../utils/ApiError';
 import { LoggerService } from '../services/LoggerService';
 import { config } from '../config/environment';
 
+interface JWTPayload {
+  id: string;
+  role: string;
+}
+
 export class AuthController {
   private logger = LoggerService.getInstance();
 
@@ -14,7 +19,7 @@ export class AuthController {
    * Login de administrador
    * POST /api/auth/login
    */
-   public async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email, password } = req.body;
       
@@ -30,9 +35,14 @@ export class AuthController {
         throw ApiError.forbidden('Acesso restrito apenas para administradores');
       }
       
-      // Gerar token JWT
+      // Gerar token JWT - CORRIGIDO
+      const payload: JWTPayload = { 
+        id: user._id.toString(), 
+        role: user.role 
+      };
+      
       const token = jwt.sign(
-        { id: user._id, role: user.role },
+        payload,
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn }
       );
@@ -116,9 +126,14 @@ export class AuthController {
         throw ApiError.unauthorized('Usuário não encontrado');
       }
       
-      // Gerar novo token
+      // Gerar novo token - CORRIGIDO
+      const payload: JWTPayload = { 
+        id: user._id.toString(), 
+        role: user.role 
+      };
+      
       const token = jwt.sign(
-        { id: user._id, role: user.role },
+        payload,
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn }
       );

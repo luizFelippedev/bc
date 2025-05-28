@@ -25,7 +25,7 @@ export class RateLimitMiddleware {
       points = 60,
       duration = 60,
       blockDuration = 0,
-      keyGenerator = (req: Request) => req.ip
+      keyGenerator = (req: Request) => req.ip || 'unknown'
     } = options;
 
     // Reutilizar limiters existentes
@@ -46,7 +46,15 @@ export class RateLimitMiddleware {
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
         const key = keyGenerator(req);
-        await limiter.consume(key);
+        
+        // CORRIGIDO: Verificar se key é válido
+        if (!key || key === 'undefined') {
+          this.logger.warn('Invalid key for rate limiting, using fallback');
+          await limiter.consume(req.ip || 'fallback');
+        } else {
+          await limiter.consume(key);
+        }
+        
         next();
       } catch (error: any) {
         if (error.msBeforeNext) {
