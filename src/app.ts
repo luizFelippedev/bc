@@ -1,4 +1,4 @@
-// ===== src/app.ts =====
+// src/app.ts - Aplicação principal
 import express, { Application, Request, Response, NextFunction } from 'express';
 import { createServer, Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -8,19 +8,20 @@ import session from 'express-session';
 import ConnectRedis from 'connect-redis';
 import path from 'path';
 import cors from 'cors';
+import helmet from 'helmet';
 
-import { redisClient } from './config/redis';
 import { config } from './config/environment';
-import { DatabaseService } from './services/DatabaseService';
 import { LoggerService } from './services/LoggerService';
 import { HealthCheckService } from './services/HealthCheckService';
 import { SocketService } from './services/SocketService';
+import { CacheService } from './services/CacheService';
 import { ErrorHandlerMiddleware } from './middlewares/errorHandler';
 import { LoggerMiddleware } from './middlewares/loggerMiddleware';
 
 import authRoutes from './routes/auth';
 import publicRoutes from './routes/public';
 import adminRoutes from './routes/admin';
+import { healthRoutes } from './routes/health';
 
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -30,7 +31,6 @@ export class App {
   private server: HttpServer;
   private io: SocketIOServer;
   private logger = LoggerService.getInstance();
-  private database = DatabaseService.getInstance();
   private healthService = HealthCheckService.getInstance();
   private socketService: SocketService | null = null;
 
@@ -52,6 +52,11 @@ export class App {
   }
 
   private setupMiddlewares(): void {
+    // Security headers
+    this.app.use(helmet({
+      contentSecurityPolicy: false // Desabilitar para Swagger
+    }));
+
     // CORS
     this.app.use(cors({
       origin: config.cors.origins,
@@ -60,133 +65,139 @@ export class App {
       allowedHeaders: config.cors.allowedHeaders
     }));
 
-    // Adicionar ID único a cada requisição
-    this.app.use(LoggerMiddleware.requestId());
-    
-    // Logging de requisições
-    this.app.use(LoggerMiddleware.requestLogger());
-    
-    // Compressão de resposta - CORRIGIDO
-    this.app.use(compression());
-    
     // Trust proxy (para obter IP real atrás de proxies)
     this.app.set('trust proxy', 1);
+
+    // Compression
+    this.app.use(compression());
     
-    // Parsing de JSON e URL-encoded
+    // Request ID e logging
+    this.app.use(LoggerMiddleware.requestId());
+    this.app.use(LoggerMiddleware.requestLogger());
+    
+    // Body parsing
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     
     // Cookies
     this.app.use(cookieParser(config.session?.secret));
     
-    // Configurar session com Redis se habilitado - CORRIGIDO
-    if (config.session?.enabled && redisClient) {
-      const RedisStore = new ConnectRedis({
-        client: redisClient,
-        prefix: 'sess:'
-      });
-      
-      this.app.use(session({
-        store: RedisStore,
-        secret: config.session.secret,
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: true,
-          maxAge: config.session.maxAge
-        }
-      }));
-    }
+    // Session com Redis (se disponível)
+    this.setupSession();
     
-    // Headers de segurança básicos
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-      next();
-    });
-    
-    // Servir arquivos estáticos
+    // Static files
     this.app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
     
-    // Swagger API docs - CORRIGIDO
+    // Swagger docs
     this.app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   }
 
-  private setupRoutes(): void {
-    // Endpoint de health check simples
-    this.app.get('/health', async (req: Request, res: Response) => {
+  private setupSession(): void {
+    if (config.session?.enabled) {
       try {
-        const status = await this.healthService.getStatusSummary();
-        res.status(status.status === 'healthy' ? 200 : 503).json(status);
+        const cacheService = CacheService.getInstance();
+        const RedisStore = ConnectRedis(session);
+        
+        this.app.use(session({
+          store: new RedisStore({ 
+            client: cacheService.getClient() as any,
+            prefix: 'sess:'
+          }),
+          secret: config.session.secret,
+          resave: false,
+          saveUninitialized: false,
+          cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            maxAge: config.session.maxAge
+          }
+        }));
+        
+        this.logger.info('✅ Session configurada com Redis');
       } catch (error) {
-        res.status(503).json({
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          error: 'Health check failed'
-        });
+        this.logger.warn('⚠️  Session configurada sem Redis (in-memory):', error);
+        
+        // Fallback para session em memória
+        this.app.use(session({
+          secret: config.session.secret,
+          resave: false,
+          saveUninitialized: false,
+          cookie: {
+            secure: false,
+            httpOnly: true,
+            maxAge: config.session.maxAge
+          }
+        }));
       }
-    });
+    }
+  }
+
+  private setupRoutes(): void {
+    // Health check
+    this.app.use('/health', healthRoutes);
     
-    // Rotas da API
+    // API routes
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/public', publicRoutes);
     this.app.use('/api/admin', adminRoutes);
     
-    // Rota raiz
+    // Root route
     this.app.get('/', (req: Request, res: Response) => {
       res.json({
         name: 'Portfolio API',
         version: process.env.npm_package_version || '1.0.0',
         environment: config.environment,
         docs: '/docs',
-        status: 'running'
+        health: '/health',
+        status: 'running',
+        timestamp: new Date().toISOString()
       });
     });
   }
 
   private setupErrorHandling(): void {
-    // Rota não encontrada (404)
+    // 404 handler
     this.app.use(ErrorHandlerMiddleware.notFound);
     
-    // Handler de erros global
+    // Global error handler
     this.app.use(ErrorHandlerMiddleware.handleError);
   }
 
   private setupSocketService(): void {
-    // Inicializar serviço de WebSocket
-    this.socketService = SocketService.getInstance(this.io);
-    this.socketService.initialize();
-    this.logger.info('Serviço WebSocket inicializado');
+    try {
+      this.socketService = SocketService.getInstance(this.io);
+      this.socketService.initialize();
+      this.logger.info('✅ WebSocket service inicializado');
+    } catch (error) {
+      this.logger.error('❌ Erro ao inicializar WebSocket:', error);
+    }
   }
 
   public async start(): Promise<void> {
     try {
-      // Conectar ao banco de dados
-      await this.database.connect();
-      
       // Iniciar monitoramento de saúde
       this.healthService.startMonitoring();
       
       // Iniciar servidor
       const port = config.port;
-      this.server.listen(port, () => {
-        this.logger.info(`🚀 Servidor iniciado na porta ${port}`);
-        this.logger.info(`📚 Documentação API: http://localhost:${port}/docs`);
-        this.logger.info(`🌍 Ambiente: ${config.environment}`);
+      await new Promise<void>((resolve) => {
+        this.server.listen(port, () => {
+          this.logger.info(`🚀 Servidor iniciado na porta ${port}`);
+          resolve();
+        });
       });
+      
     } catch (error) {
-      this.logger.error('Falha ao iniciar aplicação:', error);
+      this.logger.error('❌ Falha ao iniciar aplicação:', error);
       throw error;
     }
   }
 
   public async shutdown(): Promise<void> {
     try {
-      this.logger.info('Iniciando shutdown graceful...');
+      this.logger.info('📴 Iniciando shutdown graceful...');
       
-      // Parar monitoramento de saúde
+      // Parar monitoramento
       this.healthService.stopMonitoring();
       
       // Desconectar WebSockets
@@ -200,13 +211,18 @@ export class App {
         });
       });
       
-      // Desconectar do banco de dados
-      await this.database.disconnect();
-      
-      this.logger.info('Servidor desligado com sucesso');
+      this.logger.info('✅ Shutdown concluído');
     } catch (error) {
-      this.logger.error('Erro durante o shutdown:', error);
+      this.logger.error('❌ Erro durante shutdown:', error);
       throw error;
     }
+  }
+
+  public getApp(): Application {
+    return this.app;
+  }
+
+  public getServer(): HttpServer {
+    return this.server;
   }
 }

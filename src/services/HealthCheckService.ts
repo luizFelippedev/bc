@@ -1,6 +1,4 @@
-// ===== src/services/HealthCheckService.ts =====
-import { DatabaseService } from './DatabaseService';
-import { CacheService } from './CacheService';
+// src/services/HealthCheckService.ts
 import { LoggerService } from './LoggerService';
 import os from 'os';
 
@@ -37,14 +35,10 @@ interface HealthStatus {
 
 export class HealthCheckService {
   private static instance: HealthCheckService;
-  private databaseService: DatabaseService;
-  private cacheService: CacheService;
   private logger: LoggerService;
   private checkInterval: NodeJS.Timeout | null = null;
 
   private constructor() {
-    this.databaseService = DatabaseService.getInstance();
-    this.cacheService = CacheService.getInstance();
     this.logger = LoggerService.getInstance();
   }
 
@@ -136,7 +130,11 @@ export class HealthCheckService {
   > {
     const startTime = Date.now();
     try {
-      const isHealthy = await this.databaseService.isHealthy();
+      // Importação dinâmica para evitar dependência circular
+      const { DatabaseService } = await import('./DatabaseService');
+      const databaseService = DatabaseService.getInstance();
+      const isHealthy = await databaseService.isHealthy();
+      
       return {
         status: isHealthy ? 'healthy' : 'unhealthy',
         responseTime: Date.now() - startTime,
@@ -154,7 +152,11 @@ export class HealthCheckService {
   > {
     const startTime = Date.now();
     try {
-      const isHealthy = await this.cacheService.isHealthy();
+      // Importação dinâmica para evitar dependência circular
+      const { CacheService } = await import('./CacheService');
+      const cacheService = CacheService.getInstance();
+      const isHealthy = await cacheService.isHealthy();
+      
       return {
         status: isHealthy ? 'healthy' : 'unhealthy',
         responseTime: Date.now() - startTime,
@@ -206,12 +208,14 @@ export class HealthCheckService {
 
   public async getStatusSummary(): Promise<{
     status: 'healthy' | 'unhealthy' | 'degraded';
+    timestamp: string;
     uptime: number;
     environment: string;
   }> {
     const status = await this.checkHealth();
     return {
       status: status.status,
+      timestamp: status.timestamp.toISOString(),
       uptime: status.uptime,
       environment: status.environment,
     };

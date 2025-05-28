@@ -1,0 +1,63 @@
+# load-test.yml - Configuração Artillery para testes de carga
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 20
+      name: "Load test"
+    - duration: 60
+      arrivalRate: 50
+      name: "Stress test"
+  processor: "./load-test-processor.js"
+
+scenarios:
+  - name: "Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            statusCode: 200
+
+  - name: "API Root"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          expect:
+            statusCode: 200
+
+  - name: "Public Projects"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/public/projects"
+          expect:
+            statusCode: 200
+
+  - name: "Public Certificates"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/public/certificates"
+          expect:
+            statusCode: 200
+
+  - name: "Configuration"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/public/configuration"
+          expect:
+            statusCode: 200
+
+  - name: "Documentation"
+    weight: 5
+    flow:
+      - get:
+          url: "/docs"
+          expect:
+            statusCode: 200
