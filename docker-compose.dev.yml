@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
-      - MONGODB_URI=mongodb://portfolio-mongodb:27017/portfolio_development
+      - MONGODB_URI=mongodb+srv://luizinhofelipekaua:Hj8FAJ5IWtl8JKXy@cluster0.dd6yaxb.mongodb.net/projectdb?retryWrites=true&w=majority&appName=Cluster0
       - REDIS_URL=redis://portfolio-redis:6379
       - JWT_SECRET=your-dev-jwt-secret-key
       - LOG_LEVEL=debug
