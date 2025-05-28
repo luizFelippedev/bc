@@ -34,7 +34,14 @@ export interface IProject {
 export interface ISkill {
   name: string;
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  category: 'frontend' | 'backend' | 'database' | 'devops' | 'mobile' | 'design' | 'other';
+  category:
+    | 'frontend'
+    | 'backend'
+    | 'database'
+    | 'devops'
+    | 'mobile'
+    | 'design'
+    | 'other';
   yearsOfExperience: number;
   icon?: string;
 }
@@ -54,7 +61,13 @@ export interface ICertificate {
 }
 
 export interface ISocialLink {
-  platform: 'github' | 'linkedin' | 'twitter' | 'instagram' | 'youtube' | 'website';
+  platform:
+    | 'github'
+    | 'linkedin'
+    | 'twitter'
+    | 'instagram'
+    | 'youtube'
+    | 'website';
   url: string;
   username?: string;
 }

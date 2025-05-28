@@ -56,10 +56,10 @@ export class FileUploadService {
           const uniqueSuffix = `${Date.now()}-${uuidv4()}`;
           const ext = path.extname(file.originalname);
           cb(null, `${uniqueSuffix}${ext}`);
-        }
+        },
       }),
       limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB
+        fileSize: 10 * 1024 * 1024, // 10MB
       },
       fileFilter: (req, file, cb) => {
         const allowedMimes = [
@@ -67,15 +67,15 @@ export class FileUploadService {
           'image/png',
           'image/gif',
           'image/webp',
-          'application/pdf'
+          'application/pdf',
         ];
-        
+
         if (allowedMimes.includes(file.mimetype)) {
           cb(null, true);
         } else {
           cb(new Error('Tipo de arquivo não suportado'));
         }
-      }
+      },
     };
   }
 
@@ -88,12 +88,12 @@ export class FileUploadService {
       if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
         await this.optimizeImage(file.path);
       }
-      
+
       // URL pública para o arquivo
       const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
       const relativePath = path.relative(process.cwd(), file.path);
       const url = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
-      
+
       return {
         fieldname: file.fieldname,
         originalname: file.originalname,
@@ -101,7 +101,7 @@ export class FileUploadService {
         path: file.path,
         url,
         size: file.size,
-        mimetype: file.mimetype
+        mimetype: file.mimetype,
       };
     } catch (error) {
       this.logger.error('Erro ao processar upload:', error);
@@ -112,14 +112,16 @@ export class FileUploadService {
   /**
    * Upload de múltiplos arquivos
    */
-  public async uploadMultiple(files: Express.Multer.File[]): Promise<UploadResult[]> {
+  public async uploadMultiple(
+    files: Express.Multer.File[]
+  ): Promise<UploadResult[]> {
     const results: UploadResult[] = [];
-    
+
     for (const file of files) {
       const result = await this.uploadSingle(file);
       results.push(result);
     }
-    
+
     return results;
   }
 
@@ -130,19 +132,19 @@ export class FileUploadService {
     try {
       // Obter informações da imagem
       const metadata = await sharp(filePath).metadata();
-      
+
       // Redimensionar se for muito grande
       if ((metadata.width || 0) > 2000 || (metadata.height || 0) > 2000) {
         await sharp(filePath)
-          .resize({ 
-            width: 2000, 
-            height: 2000, 
-            fit: 'inside', 
-            withoutEnlargement: true 
+          .resize({
+            width: 2000,
+            height: 2000,
+            fit: 'inside',
+            withoutEnlargement: true,
           })
           .jpeg({ quality: 80 })
           .toFile(`${filePath}.optimized`);
-        
+
         // Substituir original pela otimizada
         await fs.unlink(filePath);
         await fs.rename(`${filePath}.optimized`, filePath);
@@ -151,7 +153,7 @@ export class FileUploadService {
         await sharp(filePath)
           .jpeg({ quality: 80 })
           .toFile(`${filePath}.optimized`);
-        
+
         await fs.unlink(filePath);
         await fs.rename(`${filePath}.optimized`, filePath);
       }

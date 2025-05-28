@@ -22,23 +22,23 @@ const analyticsSchema = new Schema<IAnalytics>({
     type: String,
     enum: ['page_view', 'project_view', 'certificate_view', 'contact'],
     required: true,
-    index: true
+    index: true,
   },
   projectId: {
     type: Schema.Types.ObjectId,
     ref: 'Project',
-    index: true
+    index: true,
   },
   certificateId: {
     type: Schema.Types.ObjectId,
     ref: 'Certificate',
-    index: true
+    index: true,
   },
   page: String,
   sessionId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
   country: String,
   city: String,
@@ -46,7 +46,7 @@ const analyticsSchema = new Schema<IAnalytics>({
   os: String,
   device: {
     type: String,
-    enum: ['desktop', 'mobile', 'tablet']
+    enum: ['desktop', 'mobile', 'tablet'],
   },
   referrer: String,
   userAgent: String,
@@ -54,8 +54,8 @@ const analyticsSchema = new Schema<IAnalytics>({
   createdAt: {
     type: Date,
     default: Date.now,
-    index: true
-  }
+    index: true,
+  },
 });
 
 export const Analytics = model<IAnalytics>('Analytics', analyticsSchema);

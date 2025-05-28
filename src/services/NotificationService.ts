@@ -43,11 +43,13 @@ export class NotificationService {
     this.logger.info('SocketIOServer configurado no NotificationService');
   }
 
-  public async sendNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<void> {
+  public async sendNotification(
+    notification: Omit<Notification, 'id' | 'createdAt'>
+  ): Promise<void> {
     const fullNotification: Notification = {
       ...notification,
       id: this.generateId(),
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     try {
@@ -55,7 +57,7 @@ export class NotificationService {
       await this.storeNotification(fullNotification);
 
       // Enviar pelos canais especificados
-      const sendPromises = notification.channels.map(channel => {
+      const sendPromises = notification.channels.map((channel) => {
         switch (channel) {
           case 'socket':
             return this.sendSocketNotification(fullNotification);
@@ -69,12 +71,12 @@ export class NotificationService {
       });
 
       await Promise.allSettled(sendPromises);
-      
+
       this.logger.info('Notificação enviada com sucesso', {
         id: fullNotification.id,
         type: fullNotification.type,
         channels: notification.channels,
-        recipients: notification.recipients.length
+        recipients: notification.recipients.length,
       });
     } catch (error) {
       this.logger.error('Erro ao enviar notificação:', error);
@@ -82,7 +84,9 @@ export class NotificationService {
     }
   }
 
-  private async sendSocketNotification(notification: Notification): Promise<void> {
+  private async sendSocketNotification(
+    notification: Notification
+  ): Promise<void> {
     if (!this.io) {
       this.logger.warn('SocketIO não configurado, pulando notificação socket');
       return;
@@ -95,7 +99,7 @@ export class NotificationService {
         title: notification.title,
         message: notification.message,
         data: notification.data,
-        timestamp: notification.createdAt
+        timestamp: notification.createdAt,
       };
 
       // Enviar para usuários específicos
@@ -108,9 +112,9 @@ export class NotificationService {
         this.io.to('admins').emit('urgent_notification', socketData);
       }
 
-      this.logger.debug('Notificação socket enviada', { 
+      this.logger.debug('Notificação socket enviada', {
         id: notification.id,
-        recipients: notification.recipients.length 
+        recipients: notification.recipients.length,
       });
     } catch (error) {
       this.logger.error('Falha ao enviar notificação socket:', error);
@@ -118,10 +122,12 @@ export class NotificationService {
     }
   }
 
-  private async sendEmailNotification(notification: Notification): Promise<void> {
+  private async sendEmailNotification(
+    notification: Notification
+  ): Promise<void> {
     try {
       const emailTemplate = this.getEmailTemplate(notification);
-      
+
       const emailPromises = notification.recipients.map(async (userId) => {
         const userEmail = await this.getUserEmail(userId);
         if (!userEmail) {
@@ -136,18 +142,18 @@ export class NotificationService {
             title: notification.title,
             message: notification.message,
             priority: notification.priority,
-            ...notification.data
+            ...notification.data,
           },
           priority: notification.priority === 'urgent' ? 'high' : 'normal',
-          subject: ''
+          subject: '',
         });
       });
 
       await Promise.allSettled(emailPromises);
-      
-      this.logger.debug('Notificações email enviadas', { 
+
+      this.logger.debug('Notificações email enviadas', {
         id: notification.id,
-        recipients: notification.recipients.length 
+        recipients: notification.recipients.length,
       });
     } catch (error) {
       this.logger.error('Falha ao enviar notificação email:', error);
@@ -155,24 +161,26 @@ export class NotificationService {
     }
   }
 
-  private async sendPushNotification(notification: Notification): Promise<void> {
+  private async sendPushNotification(
+    notification: Notification
+  ): Promise<void> {
     // TODO: Implementar push notifications (Firebase, etc.)
     this.logger.info('Push notification seria enviada aqui', {
       id: notification.id,
-      title: notification.title
+      title: notification.title,
     });
   }
 
   private async storeNotification(notification: Notification): Promise<void> {
     try {
       // TTL baseado na data de expiração ou padrão de 7 dias
-      const ttl = notification.expiresAt ? 
-        Math.floor((notification.expiresAt.getTime() - Date.now()) / 1000) :
-        86400 * 7;
+      const ttl = notification.expiresAt
+        ? Math.floor((notification.expiresAt.getTime() - Date.now()) / 1000)
+        : 86400 * 7;
 
       if (ttl <= 0) {
         this.logger.warn('Notificação com TTL expirado, não será armazenada', {
-          id: notification.id
+          id: notification.id,
         });
         return;
       }
@@ -185,7 +193,7 @@ export class NotificationService {
       );
 
       // Adicionar à lista de notificações de cada usuário
-      const userPromises = notification.recipients.map(userId => 
+      const userPromises = notification.recipients.map((userId) =>
         this.addNotificationToUser(userId, notification.id, ttl)
       );
 
@@ -196,63 +204,76 @@ export class NotificationService {
     }
   }
 
-  private async addNotificationToUser(userId: string, notificationId: string, ttl: number): Promise<void> {
+  private async addNotificationToUser(
+    userId: string,
+    notificationId: string,
+    ttl: number
+  ): Promise<void> {
     const userNotificationsKey = `user:${userId}:notifications`;
-    
+
     // Adicionar notificação à lista do usuário
-    await this.cacheService.getClient().lpush(userNotificationsKey, notificationId);
-    
+    await this.cacheService
+      .getClient()
+      .lpush(userNotificationsKey, notificationId);
+
     // Manter apenas as últimas 100 notificações
     await this.cacheService.getClient().ltrim(userNotificationsKey, 0, 99);
-    
+
     // Definir TTL para a lista (máximo entre TTL da notificação e 30 dias)
     const listTtl = Math.max(ttl, 86400 * 30);
     await this.cacheService.getClient().expire(userNotificationsKey, listTtl);
   }
 
-  public async getUserNotifications(userId: string, options: {
-    limit?: number;
-    offset?: number;
-    unreadOnly?: boolean;
-  } = {}): Promise<{
+  public async getUserNotifications(
+    userId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      unreadOnly?: boolean;
+    } = {}
+  ): Promise<{
     notifications: Notification[];
     total: number;
     unread: number;
   }> {
     try {
       const { limit = 20, offset = 0, unreadOnly = false } = options;
-      
-      const notificationIds = await this.cacheService.getClient().lrange(
-        `user:${userId}:notifications`,
-        offset,
-        offset + limit - 1
-      );
+
+      const notificationIds = await this.cacheService
+        .getClient()
+        .lrange(`user:${userId}:notifications`, offset, offset + limit - 1);
 
       const notifications: Notification[] = [];
-      const readNotifications = unreadOnly ? 
-        await this.cacheService.getClient().smembers(`user:${userId}:read_notifications`) :
-        [];
+      const readNotifications = unreadOnly
+        ? await this.cacheService
+            .getClient()
+            .smembers(`user:${userId}:read_notifications`)
+        : [];
       const readSet = new Set(readNotifications);
-      
+
       for (const id of notificationIds) {
         if (unreadOnly && readSet.has(id)) {
           continue;
         }
 
-        const notificationData = await this.cacheService.get(`notification:${id}`);
+        const notificationData = await this.cacheService.get(
+          `notification:${id}`
+        );
         if (notificationData) {
           notifications.push(notificationData);
         }
       }
 
       // Contar total e não lidas
-      const totalIds = await this.cacheService.getClient().llen(`user:${userId}:notifications`);
+      const totalIds = await this.cacheService
+        .getClient()
+        .llen(`user:${userId}:notifications`);
       const unreadCount = totalIds - readSet.size;
 
       return {
         notifications,
         total: totalIds,
-        unread: Math.max(0, unreadCount)
+        unread: Math.max(0, unreadCount),
       };
     } catch (error) {
       this.logger.error('Falha ao obter notificações do usuário:', error);
@@ -260,20 +281,29 @@ export class NotificationService {
     }
   }
 
-  public async markAsRead(userId: string, notificationIds: string | string[]): Promise<void> {
+  public async markAsRead(
+    userId: string,
+    notificationIds: string | string[]
+  ): Promise<void> {
     try {
-      const ids = Array.isArray(notificationIds) ? notificationIds : [notificationIds];
-      
+      const ids = Array.isArray(notificationIds)
+        ? notificationIds
+        : [notificationIds];
+
       if (ids.length === 0) return;
 
-      await this.cacheService.getClient().sadd(`user:${userId}:read_notifications`, ...ids);
-      
+      await this.cacheService
+        .getClient()
+        .sadd(`user:${userId}:read_notifications`, ...ids);
+
       // Definir TTL para lista de lidas (30 dias)
-      await this.cacheService.getClient().expire(`user:${userId}:read_notifications`, 86400 * 30);
-      
+      await this.cacheService
+        .getClient()
+        .expire(`user:${userId}:read_notifications`, 86400 * 30);
+
       this.logger.debug('Notificações marcadas como lidas', {
         userId,
-        count: ids.length
+        count: ids.length,
       });
     } catch (error) {
       this.logger.error('Falha ao marcar notificação como lida:', error);
@@ -283,30 +313,41 @@ export class NotificationService {
 
   public async markAllAsRead(userId: string): Promise<void> {
     try {
-      const notificationIds = await this.cacheService.getClient().lrange(
-        `user:${userId}:notifications`,
-        0,
-        -1
-      );
+      const notificationIds = await this.cacheService
+        .getClient()
+        .lrange(`user:${userId}:notifications`, 0, -1);
 
       if (notificationIds.length > 0) {
         await this.markAsRead(userId, notificationIds);
       }
     } catch (error) {
-      this.logger.error('Falha ao marcar todas as notificações como lidas:', error);
+      this.logger.error(
+        'Falha ao marcar todas as notificações como lidas:',
+        error
+      );
       throw error;
     }
   }
 
-  public async deleteNotification(userId: string, notificationId: string): Promise<void> {
+  public async deleteNotification(
+    userId: string,
+    notificationId: string
+  ): Promise<void> {
     try {
       // Remover da lista do usuário
-      await this.cacheService.getClient().lrem(`user:${userId}:notifications`, 1, notificationId);
-      
+      await this.cacheService
+        .getClient()
+        .lrem(`user:${userId}:notifications`, 1, notificationId);
+
       // Remover da lista de lidas
-      await this.cacheService.getClient().srem(`user:${userId}:read_notifications`, notificationId);
-      
-      this.logger.debug('Notificação removida para usuário', { userId, notificationId });
+      await this.cacheService
+        .getClient()
+        .srem(`user:${userId}:read_notifications`, notificationId);
+
+      this.logger.debug('Notificação removida para usuário', {
+        userId,
+        notificationId,
+      });
     } catch (error) {
       this.logger.error('Falha ao deletar notificação:', error);
       throw error;
@@ -322,9 +363,9 @@ export class NotificationService {
       info: 'info-notification',
       success: 'success-notification',
       warning: 'warning-notification',
-      error: 'error-notification'
+      error: 'error-notification',
     };
-    
+
     return templateMap[notification.type] || 'generic-notification';
   }
 
@@ -345,24 +386,26 @@ export class NotificationService {
    */
   public async cleanupExpiredNotifications(): Promise<void> {
     this.logger.info('Limpeza de notificações expiradas iniciada');
-    
+
     // Esta função seria chamada periodicamente via cron job
     // Por enquanto apenas logga que seria executada
-    
+
     this.logger.info('Limpeza de notificações expiradas concluída');
   }
 
   /**
    * Obter estatísticas de notificações
    */
-  public async getNotificationStats(timeframe: 'day' | 'week' | 'month' = 'day'): Promise<any> {
+  public async getNotificationStats(
+    timeframe: 'day' | 'week' | 'month' = 'day'
+  ): Promise<any> {
     try {
       // TODO: Implementar estatísticas baseadas em dados históricos
       return {
         sent: 0,
         read: 0,
         byType: {},
-        byChannel: {}
+        byChannel: {},
       };
     } catch (error) {
       this.logger.error('Erro ao obter estatísticas de notificações:', error);

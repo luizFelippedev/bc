@@ -14,15 +14,15 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/index.ts',
     '!src/server.ts',
-    '!src/types/*.ts'
+    '!src/types/*.ts',
   ],
   coverageThreshold: {
     global: {
       branches: 70,
-      functions: 70, 
+      functions: 70,
       lines: 70,
-      statements: 70
-    }
+      statements: 70,
+    },
   },
   moduleNameMapping: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -33,11 +33,11 @@ module.exports = {
     '^@routes/(.*)$': '<rootDir>/src/routes/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@config/(.*)$': '<rootDir>/src/config/$1',
-    '^@types/(.*)$': '<rootDir>/src/types/$1'
+    '^@types/(.*)$': '<rootDir>/src/types/$1',
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000,
   verbose: true,
   detectOpenHandles: true,
-  forceExit: true
+  forceExit: true,
 };

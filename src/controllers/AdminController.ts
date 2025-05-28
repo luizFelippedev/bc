@@ -17,7 +17,11 @@ export class AdminController {
    * Obter dados do dashboard admin
    * GET /api/admin/dashboard
    */
-  public async getDashboardData(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getDashboardData(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const cacheKey = 'admin:dashboard:overview';
       let dashboardData = await this.cacheService.get(cacheKey);
@@ -37,7 +41,7 @@ export class AdminController {
           visitsLastMonth,
           topProjects,
           deviceStats,
-          geoStats
+          geoStats,
         ] = await Promise.all([
           Project.countDocuments({ isActive: true }),
           Certificate.countDocuments({ isActive: true }),
@@ -47,7 +51,7 @@ export class AdminController {
           Analytics.countDocuments({ createdAt: { $gte: lastMonth } }),
           this.getTopProjects(),
           this.getDeviceStats(),
-          this.getGeographicStats()
+          this.getGeographicStats(),
         ]);
 
         dashboardData = {
@@ -58,11 +62,11 @@ export class AdminController {
             visitsToday,
             visitsLastWeek,
             visitsLastMonth,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
           },
           topProjects,
           deviceStats,
-          geoStats
+          geoStats,
         };
 
         // Cache por 5 minutos
@@ -80,27 +84,32 @@ export class AdminController {
    * Obter estatísticas detalhadas
    * GET /api/admin/analytics
    */
-  public async getAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getAnalytics(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { startDate, endDate, type = 'all' } = req.query;
-      
+
       const filters: any = {};
-      
+
       if (startDate) {
         filters.createdAt = { $gte: new Date(startDate as string) };
       }
-      
+
       if (endDate) {
         if (!filters.createdAt) filters.createdAt = {};
         filters.createdAt.$lte = new Date(endDate as string);
       }
-      
+
       if (type && type !== 'all') {
         filters.eventType = type;
       }
-      
-      const analyticsData = await this.analyticsService.getDetailedStats(filters);
-      
+
+      const analyticsData =
+        await this.analyticsService.getDetailedStats(filters);
+
       res.json(ApiResponse.success(analyticsData));
     } catch (error) {
       this.logger.error('Erro ao obter analytics:', error);
@@ -112,10 +121,14 @@ export class AdminController {
    * Estatísticas em tempo real
    * GET /api/admin/realtime
    */
-  public async getRealTimeStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  public async getRealTimeStats(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const realTimeData = await this.analyticsService.getRealTimeStats();
-      
+
       res.json(ApiResponse.success(realTimeData));
     } catch (error) {
       this.logger.error('Erro ao obter estatísticas em tempo real:', error);
@@ -137,8 +150,8 @@ export class AdminController {
           from: 'projects',
           localField: '_id',
           foreignField: '_id',
-          as: 'project'
-        }
+          as: 'project',
+        },
       },
       { $unwind: '$project' },
       {
@@ -147,36 +160,42 @@ export class AdminController {
           id: '$project._id',
           title: '$project.title',
           slug: '$project.slug',
-          views: '$count'
-        }
-      }
+          views: '$count',
+        },
+      },
     ]);
-    
+
     return topProjects;
   }
 
   private async getDeviceStats(): Promise<any> {
     const devices = await Analytics.aggregate([
       { $group: { _id: '$device', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+      { $sort: { count: -1 } },
     ]);
-    
+
     const browsers = await Analytics.aggregate([
       { $group: { _id: '$browser', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
-    
+
     const os = await Analytics.aggregate([
       { $group: { _id: '$os', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
-    
+
     return {
-      devices: devices.map(d => ({ device: d._id || 'unknown', count: d.count })),
-      browsers: browsers.map(b => ({ browser: b._id || 'unknown', count: b.count })),
-      os: os.map(o => ({ os: o._id || 'unknown', count: o.count }))
+      devices: devices.map((d) => ({
+        device: d._id || 'unknown',
+        count: d.count,
+      })),
+      browsers: browsers.map((b) => ({
+        browser: b._id || 'unknown',
+        count: b.count,
+      })),
+      os: os.map((o) => ({ os: o._id || 'unknown', count: o.count })),
     };
   }
 
@@ -184,11 +203,14 @@ export class AdminController {
     const countries = await Analytics.aggregate([
       { $group: { _id: '$country', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 10 }
+      { $limit: 10 },
     ]);
-    
+
     return {
-      countries: countries.map(c => ({ country: c._id || 'unknown', count: c.count }))
+      countries: countries.map((c) => ({
+        country: c._id || 'unknown',
+        count: c.count,
+      })),
     };
   }
 }

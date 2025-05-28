@@ -23,7 +23,7 @@ export class UserEventHandler {
         message: `Usuário ${user.name} foi criado`,
         recipients: ['admin'],
         channels: ['socket'],
-        priority: 'normal'
+        priority: 'normal',
       });
 
       // Registrar analytics - CORRIGIDO
@@ -31,7 +31,7 @@ export class UserEventHandler {
         eventType: 'page_view', // Usando um tipo válido da interface
         sessionId: user.sessionId || 'system',
         userAgent: 'system',
-        ip: '127.0.0.1'
+        ip: '127.0.0.1',
       });
     } catch (error) {
       this.logger.error('Erro ao processar evento user:created:', error);
@@ -45,7 +45,7 @@ export class UserEventHandler {
         eventType: 'page_view', // Usando um tipo válido da interface
         sessionId: data.sessionId || 'unknown',
         userAgent: data.userAgent,
-        ip: data.ip
+        ip: data.ip,
       });
     } catch (error) {
       this.logger.error('Erro ao processar evento user:login:', error);
@@ -55,7 +55,7 @@ export class UserEventHandler {
   private static handleUserLogout(data: any): void {
     this.logger.info('User logout event processed', {
       userId: data.userId,
-      sessionId: data.sessionId
+      sessionId: data.sessionId,
     });
   }
 }

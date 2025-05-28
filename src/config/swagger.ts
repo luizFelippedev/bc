@@ -11,31 +11,35 @@ const options = {
       description: 'API Documentation for Portfolio Backend',
       contact: {
         name: 'API Support',
-        email: 'support@portfolio.com'
-      }
+        email: 'support@portfolio.com',
+      },
     },
     servers: [
       {
-        url: config.environment === 'production' 
-          ? 'https://api.portfolio.com' 
-          : `http://localhost:${config.port}`,
-        description: config.environment === 'production' ? 'Production' : 'Development'
-      }
+        url:
+          config.environment === 'production'
+            ? 'https://api.portfolio.com'
+            : `http://localhost:${config.port}`,
+        description:
+          config.environment === 'production' ? 'Production' : 'Development',
+      },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
-      }
+          bearerFormat: 'JWT',
+        },
+      },
     },
-    security: [{
-      bearerAuth: []
-    }]
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
-  apis: ['./src/routes/*.ts', './src/models/*.ts']
+  apis: ['./src/routes/*.ts', './src/models/*.ts'],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

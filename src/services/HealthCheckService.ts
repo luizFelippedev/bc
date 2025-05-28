@@ -76,7 +76,9 @@ export class HealthCheckService {
       }
     }, intervalMs);
 
-    this.logger.info(`Monitoramento de saúde iniciado (intervalo: ${intervalMs}ms)`);
+    this.logger.info(
+      `Monitoramento de saúde iniciado (intervalo: ${intervalMs}ms)`
+    );
   }
 
   public stopMonitoring(): void {
@@ -89,24 +91,29 @@ export class HealthCheckService {
 
   public async checkHealth(): Promise<HealthStatus> {
     const startTime = Date.now();
-    
+
     const [dbStatus, cacheStatus, systemStatus] = await Promise.all([
       this.checkDatabaseHealth(),
       this.checkCacheHealth(),
-      this.checkSystemHealth()
+      this.checkSystemHealth(),
     ]);
 
     const components = {
       database: dbStatus,
       cache: cacheStatus,
-      system: systemStatus
+      system: systemStatus,
     };
 
-    const unhealthyComponents = Object.values(components).filter(c => c.status === 'unhealthy');
-    
+    const unhealthyComponents = Object.values(components).filter(
+      (c) => c.status === 'unhealthy'
+    );
+
     let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
     if (unhealthyComponents.length > 0) {
-      status = unhealthyComponents.length === Object.keys(components).length ? 'unhealthy' : 'degraded';
+      status =
+        unhealthyComponents.length === Object.keys(components).length
+          ? 'unhealthy'
+          : 'degraded';
     }
 
     const result: HealthStatus = {
@@ -115,90 +122,98 @@ export class HealthCheckService {
       version: process.env.npm_package_version || '1.0.0',
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
-      components
+      components,
     };
 
-    this.logger.debug(`Health check completed in ${Date.now() - startTime}ms`, { status });
+    this.logger.debug(`Health check completed in ${Date.now() - startTime}ms`, {
+      status,
+    });
     return result;
   }
 
-  private async checkDatabaseHealth(): Promise<HealthStatus['components']['database']> {
+  private async checkDatabaseHealth(): Promise<
+    HealthStatus['components']['database']
+  > {
     const startTime = Date.now();
     try {
       const isHealthy = await this.databaseService.isHealthy();
       return {
         status: isHealthy ? 'healthy' : 'unhealthy',
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         status: 'unhealthy',
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
-  private async checkCacheHealth(): Promise<HealthStatus['components']['cache']> {
+  private async checkCacheHealth(): Promise<
+    HealthStatus['components']['cache']
+  > {
     const startTime = Date.now();
     try {
       const isHealthy = await this.cacheService.isHealthy();
       return {
         status: isHealthy ? 'healthy' : 'unhealthy',
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         status: 'unhealthy',
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
-  private async checkSystemHealth(): Promise<HealthStatus['components']['system']> {
+  private async checkSystemHealth(): Promise<
+    HealthStatus['components']['system']
+  > {
     try {
       const totalMem = os.totalmem();
       const freeMem = os.freemem();
       const usedMem = totalMem - freeMem;
       const percentUsed = (usedMem / totalMem) * 100;
-      
+
       const cpuLoad = os.loadavg();
       const cpuCores = os.cpus().length;
-      
+
       const isMemHealthy = percentUsed < 90;
       const isCpuHealthy = cpuLoad[0] / cpuCores < 2;
-      
+
       return {
         status: isMemHealthy && isCpuHealthy ? 'healthy' : 'unhealthy',
         memory: {
           total: totalMem,
           free: freeMem,
           used: usedMem,
-          percentUsed
+          percentUsed,
         },
         cpu: {
           load: cpuLoad,
-          cores: cpuCores
-        }
+          cores: cpuCores,
+        },
       };
     } catch (error) {
       return {
         status: 'unhealthy',
         memory: { total: 0, free: 0, used: 0, percentUsed: 0 },
-        cpu: { load: [0, 0, 0], cores: 0 }
+        cpu: { load: [0, 0, 0], cores: 0 },
       };
     }
   }
 
-  public async getStatusSummary(): Promise<{ 
+  public async getStatusSummary(): Promise<{
     status: 'healthy' | 'unhealthy' | 'degraded';
-    uptime: number; 
-    environment: string; 
+    uptime: number;
+    environment: string;
   }> {
     const status = await this.checkHealth();
     return {
       status: status.status,
       uptime: status.uptime,
-      environment: status.environment
+      environment: status.environment,
     };
   }
 

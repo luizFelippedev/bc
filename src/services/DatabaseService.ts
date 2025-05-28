@@ -79,7 +79,7 @@ export class DatabaseService {
       // 1 = connected, 2 = connecting
       const isConnected = [1, 2].includes(this.connection.readyState);
       
-      if (isConnected) {
+      if (isConnected && this.connection.db) {
         // Test with a simple operation
         await this.connection.db.admin().ping();
         return true;

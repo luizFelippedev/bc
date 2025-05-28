@@ -19,16 +19,21 @@ export class ErrorHandlerMiddleware {
   /**
    * Middleware para tratar todos os erros
    */
-  public static handleError(err: Error, req: Request, res: Response, next: NextFunction) {
+  public static handleError(
+    err: Error,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     // Já é um ApiError? Se não, converter para um
     let error = err instanceof ApiError ? err : this.convertToApiError(err);
-    
+
     // Adicionar caminho da requisição ao erro
     error.path = error.path || req.path;
-    
+
     // Registrar erro
     this.logError(error, req);
-    
+
     // Responder ao cliente
     res.status(error.statusCode).json({
       success: false,
@@ -37,8 +42,8 @@ export class ErrorHandlerMiddleware {
         message: error.message,
         details: error.details,
         timestamp: error.timestamp,
-        path: error.path
-      }
+        path: error.path,
+      },
     });
   }
 
@@ -49,34 +54,34 @@ export class ErrorHandlerMiddleware {
     // Erro de validação do Joi
     if (error instanceof ValidationError) {
       return ApiError.validation('Erro de validação', {
-        details: error.details.map(detail => ({
+        details: error.details.map((detail) => ({
           message: detail.message,
-          path: detail.path.join('.')
-        }))
+          path: detail.path.join('.'),
+        })),
       });
     }
 
     // Erro de validação do Mongoose
     if (error.name === 'ValidationError' && error.errors) {
-      const details = Object.keys(error.errors).map(field => ({
+      const details = Object.keys(error.errors).map((field) => ({
         path: field,
-        message: error.errors[field].message
+        message: error.errors[field].message,
       }));
-      
+
       return ApiError.validation('Erro de validação do modelo', details);
     }
 
     // Erro de duplicação do MongoDB
     if (error.name === 'MongoError' || error.name === 'MongoServerError') {
       const mongoError = error as MongoError;
-      
+
       if (mongoError.code === 11000) {
         // Erro de chave duplicada
         return ApiError.conflict('Recurso já existe', {
-          duplicateKey: this.getDuplicateKeyFromError(mongoError)
+          duplicateKey: this.getDuplicateKeyFromError(mongoError),
         });
       }
-      
+
       return ApiError.database(mongoError.message, { code: mongoError.code });
     }
 
@@ -87,9 +92,9 @@ export class ErrorHandlerMiddleware {
 
     // Erro genérico
     return ApiError.internal(
-      process.env.NODE_ENV === 'production' ? 
-        'Erro interno do servidor' : 
-        error.message || 'Erro interno do servidor',
+      process.env.NODE_ENV === 'production'
+        ? 'Erro interno do servidor'
+        : error.message || 'Erro interno do servidor',
       false
     );
   }
@@ -103,7 +108,7 @@ export class ErrorHandlerMiddleware {
       if (keyValue) {
         return Object.keys(keyValue)[0];
       }
-      
+
       // Tentar extrair do erro
       const errorMessage = error.message;
       const matches = errorMessage.match(/index:\s+(\w+)_/);
@@ -124,7 +129,7 @@ export class ErrorHandlerMiddleware {
           code: error.code,
           message: error.message,
           statusCode: error.statusCode,
-          path: error.path || req.path
+          path: error.path || req.path,
         },
         request: {
           method: req.method,
@@ -133,8 +138,8 @@ export class ErrorHandlerMiddleware {
           params: req.params,
           ip: req.ip,
           userAgent: req.get('user-agent'),
-          userId: req.user?.id
-        }
+          userId: req.user?.id,
+        },
       });
     } else {
       // Erros não operacionais são bugs e precisam de mais informações
@@ -144,7 +149,7 @@ export class ErrorHandlerMiddleware {
           message: error.message,
           statusCode: error.statusCode,
           stack: error.stack,
-          path: error.path || req.path
+          path: error.path || req.path,
         },
         request: {
           method: req.method,
@@ -154,8 +159,8 @@ export class ErrorHandlerMiddleware {
           body: this.sanitizeBody(req.body),
           ip: req.ip,
           userAgent: req.get('user-agent'),
-          userId: req.user?.id
-        }
+          userId: req.user?.id,
+        },
       });
     }
   }
@@ -165,16 +170,23 @@ export class ErrorHandlerMiddleware {
    */
   private static sanitizeBody(body: any): any {
     if (!body) return {};
-    
+
     const sanitized = { ...body };
-    const sensitiveFields = ['password', 'senha', 'secret', 'token', 'credit_card', 'cartao'];
-    
-    sensitiveFields.forEach(field => {
+    const sensitiveFields = [
+      'password',
+      'senha',
+      'secret',
+      'token',
+      'credit_card',
+      'cartao',
+    ];
+
+    sensitiveFields.forEach((field) => {
       if (sanitized[field]) {
         sanitized[field] = '***REDACTED***';
       }
     });
-    
+
     return sanitized;
   }
 
@@ -187,10 +199,10 @@ export class ErrorHandlerMiddleware {
         error: {
           message: error.message,
           stack: error.stack,
-          name: error.name
-        }
+          name: error.name,
+        },
       });
-      
+
       // Iniciar shutdown graceful
       setTimeout(() => {
         process.exit(1);
@@ -202,8 +214,8 @@ export class ErrorHandlerMiddleware {
         error: {
           message: reason.message || String(reason),
           stack: reason.stack,
-          name: reason.name
-        }
+          name: reason.name,
+        },
       });
     });
   }

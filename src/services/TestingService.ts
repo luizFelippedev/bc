@@ -1,18 +1,18 @@
 // src/services/TestingService.ts - Serviço de Testes
 import { LoggerService } from './LoggerService';
 import { DatabaseService } from './DatabaseService';
-import { RedisService } from './RedisService';
+import { CacheService } from './CacheService';
 
 export class TestingService {
   private static instance: TestingService;
   private logger: LoggerService;
   private database: DatabaseService;
-  private redis: RedisService;
+  private cache: CacheService;
 
   private constructor() {
     this.logger = LoggerService.getInstance();
     this.database = DatabaseService.getInstance();
-    this.redis = RedisService.getInstance();
+    this.cache = CacheService.getInstance();
   }
 
   public static getInstance(): TestingService {
@@ -61,7 +61,7 @@ export class TestingService {
 
   private async clearTestDatabase(): Promise<void> {
     const connection = this.database.getConnection();
-    if (connection) {
+    if (connection?.db) {
       const collections = await connection.db.listCollections().toArray();
       
       for (const collection of collections) {
@@ -73,8 +73,12 @@ export class TestingService {
   }
 
   private async clearTestCache(): Promise<void> {
-    const client = this.redis.getClient();
-    await client.flushdb();
+    try {
+      const client = this.cache.getClient();
+      await client.flushdb();
+    } catch (error) {
+      this.logger.warn('Erro ao limpar cache de teste:', error);
+    }
   }
 
   private async seedTestData(): Promise<void> {
@@ -91,7 +95,6 @@ export class TestingService {
         fullDescription: 'This is a detailed description of the test project',
         category: 'web_app',
         status: 'completed',
-        visibility: 'public',
         featured: true,
         technologies: [
           { name: 'React', category: 'frontend', level: 'primary' },

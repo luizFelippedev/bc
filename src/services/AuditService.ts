@@ -17,22 +17,25 @@ interface IAuditLog extends Document {
   timestamp: Date;
 }
 
-const auditLogSchema = new Schema<IAuditLog>({
-  userId: String,
-  sessionId: { type: String, required: true },
-  action: { type: String, required: true },
-  resource: { type: String, required: true },
-  resourceId: String,
-  details: Schema.Types.Mixed,
-  ipAddress: { type: String, required: true },
-  userAgent: { type: String, required: true },
-  success: { type: Boolean, required: true },
-  errorMessage: String,
-  duration: Number,
-  timestamp: { type: Date, default: Date.now }
-}, {
-  collection: 'audit_logs'
-});
+const auditLogSchema = new Schema<IAuditLog>(
+  {
+    userId: String,
+    sessionId: { type: String, required: true },
+    action: { type: String, required: true },
+    resource: { type: String, required: true },
+    resourceId: String,
+    details: Schema.Types.Mixed,
+    ipAddress: { type: String, required: true },
+    userAgent: { type: String, required: true },
+    success: { type: Boolean, required: true },
+    errorMessage: String,
+    duration: Number,
+    timestamp: { type: Date, default: Date.now },
+  },
+  {
+    collection: 'audit_logs',
+  }
+);
 
 // Indexes para consultas eficientes
 auditLogSchema.index({ timestamp: -1 });
@@ -73,7 +76,7 @@ export class AuditService {
     try {
       const auditEntry = new AuditLog({
         ...auditData,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       await auditEntry.save();
@@ -98,11 +101,11 @@ export class AuditService {
   }): Promise<{ logs: IAuditLog[]; total: number }> {
     try {
       const query: any = {};
-      
+
       if (filters.userId) query.userId = filters.userId;
       if (filters.resource) query.resource = filters.resource;
       if (filters.action) query.action = filters.action;
-      
+
       if (filters.startDate || filters.endDate) {
         query.timestamp = {};
         if (filters.startDate) query.timestamp.$gte = filters.startDate;
@@ -119,7 +122,7 @@ export class AuditService {
           .skip(skip)
           .limit(limit)
           .lean(),
-        AuditLog.countDocuments(query)
+        AuditLog.countDocuments(query),
       ]);
 
       return { logs, total };
@@ -129,7 +132,9 @@ export class AuditService {
     }
   }
 
-  public async getAuditStats(timeframe: 'day' | 'week' | 'month'): Promise<any> {
+  public async getAuditStats(
+    timeframe: 'day' | 'week' | 'month'
+  ): Promise<any> {
     try {
       const now = new Date();
       let startDate: Date;
@@ -152,10 +157,10 @@ export class AuditService {
           $group: {
             _id: {
               action: '$action',
-              success: '$success'
+              success: '$success',
             },
-            count: { $sum: 1 }
-          }
+            count: { $sum: 1 },
+          },
         },
         {
           $group: {
@@ -163,17 +168,17 @@ export class AuditService {
             total: { $sum: '$count' },
             successful: {
               $sum: {
-                $cond: [{ $eq: ['$_id.success', true] }, '$count', 0]
-              }
+                $cond: [{ $eq: ['$_id.success', true] }, '$count', 0],
+              },
             },
             failed: {
               $sum: {
-                $cond: [{ $eq: ['$_id.success', false] }, '$count', 0]
-              }
-            }
-          }
+                $cond: [{ $eq: ['$_id.success', false] }, '$count', 0],
+              },
+            },
+          },
         },
-        { $sort: { total: -1 as 1 | -1 } }
+        { $sort: { total: -1 as 1 | -1 } },
       ];
 
       const stats = await AuditLog.aggregate(pipeline);
@@ -191,9 +196,9 @@ export class AuditService {
       'admin_login',
       'password_change',
       'permission_change',
-      'system_config_change'
+      'system_config_change',
     ];
-    
+
     return criticalActions.includes(action);
   }
 }

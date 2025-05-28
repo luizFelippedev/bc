@@ -7,8 +7,11 @@ const logger = LoggerService.getInstance();
 
 export const connectDatabase = async (): Promise<void> => {
   try {
-    await mongoose.connect(config.database.mongodb.uri, config.database.mongodb.options);
-    
+    await mongoose.connect(
+      config.database.mongodb.uri,
+      config.database.mongodb.options
+    );
+
     mongoose.connection.on('connected', () => {
       logger.info('✅ MongoDB connected successfully');
     });
@@ -20,7 +23,6 @@ export const connectDatabase = async (): Promise<void> => {
     mongoose.connection.on('disconnected', () => {
       logger.warn('MongoDB disconnected');
     });
-
   } catch (error) {
     logger.error('❌ Failed to connect to MongoDB:', error);
     throw error;
@@ -36,4 +38,3 @@ export const closeDatabase = async (): Promise<void> => {
     throw error;
   }
 };
-

@@ -11,22 +11,26 @@ const router = Router();
 router.use(RateLimitMiddleware.authLimiter);
 
 // Rotas de autenticação
-router.post('/login', 
+router.post(
+  '/login',
   ValidationMiddleware.validate(ValidationMiddleware.schemas.login),
   authController.login.bind(authController)
 );
 
-router.post('/logout', 
+router.post(
+  '/logout',
   authMiddleware.authenticate,
   authController.logout.bind(authController)
 );
 
-router.get('/verify', 
+router.get(
+  '/verify',
   authMiddleware.authenticate,
   authController.verifyToken.bind(authController)
 );
 
-router.post('/refresh', 
+router.post(
+  '/refresh',
   authMiddleware.authenticate,
   authController.refreshToken.bind(authController)
 );

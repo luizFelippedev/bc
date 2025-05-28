@@ -17,20 +17,24 @@ export class ApiResponse {
       success: true,
       message: message || 'Operation completed successfully',
       data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * Resposta de erro
    */
-  public static error(message: string, statusCode: number = 500, errors?: any): any {
+  public static error(
+    message: string,
+    statusCode: number = 500,
+    errors?: any
+  ): any {
     return {
       success: false,
       message,
       statusCode,
       errors,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -38,8 +42,8 @@ export class ApiResponse {
    * Resposta paginada
    */
   public static paginated<T>(
-    data: T[], 
-    pagination: PaginationMeta, 
+    data: T[],
+    pagination: PaginationMeta,
     message?: string
   ): any {
     return {
@@ -47,7 +51,7 @@ export class ApiResponse {
       message: message || 'Data retrieved successfully',
       data,
       pagination,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

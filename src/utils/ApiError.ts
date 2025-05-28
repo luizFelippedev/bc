@@ -15,19 +15,22 @@ export class ApiError extends Error {
     details?: any
   ) {
     super(message);
-    
+
     this.statusCode = statusCode;
     this.code = code || `ERROR_${statusCode}`;
     this.details = details;
     this.isOperational = isOperational;
     this.timestamp = new Date();
-    
+
     Object.setPrototypeOf(this, ApiError.prototype);
     Error.captureStackTrace(this, this.constructor);
   }
 
   // Factory methods para erros comuns
-  public static badRequest(message: string = 'Bad Request', details?: any): ApiError {
+  public static badRequest(
+    message: string = 'Bad Request',
+    details?: any
+  ): ApiError {
     return new ApiError(400, message, 'BAD_REQUEST', true, details);
   }
 
@@ -43,23 +46,37 @@ export class ApiError extends Error {
     return new ApiError(404, `${resource} not found`, 'NOT_FOUND');
   }
 
-  public static conflict(message: string = 'Conflict', details?: any): ApiError {
+  public static conflict(
+    message: string = 'Conflict',
+    details?: any
+  ): ApiError {
     return new ApiError(409, message, 'CONFLICT', true, details);
   }
 
-  public static validation(message: string = 'Validation Error', details?: any): ApiError {
+  public static validation(
+    message: string = 'Validation Error',
+    details?: any
+  ): ApiError {
     return new ApiError(422, message, 'VALIDATION_ERROR', true, details);
   }
 
-  public static tooManyRequests(message: string = 'Too Many Requests'): ApiError {
+  public static tooManyRequests(
+    message: string = 'Too Many Requests'
+  ): ApiError {
     return new ApiError(429, message, 'TOO_MANY_REQUESTS');
   }
 
-  public static internal(message: string = 'Internal Server Error', isOperational: boolean = false): ApiError {
+  public static internal(
+    message: string = 'Internal Server Error',
+    isOperational: boolean = false
+  ): ApiError {
     return new ApiError(500, message, 'INTERNAL_ERROR', isOperational);
   }
 
-  public static database(message: string = 'Database Error', details?: any): ApiError {
+  public static database(
+    message: string = 'Database Error',
+    details?: any
+  ): ApiError {
     return new ApiError(503, message, 'DATABASE_ERROR', false, details);
   }
 }

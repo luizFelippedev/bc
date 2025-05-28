@@ -5,10 +5,9 @@ import { Certificate } from '../models/Certificate';
 import { User } from '../models/User';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as XLSX from 'xlsx';
 
 interface ExportOptions {
-  format: 'json' | 'csv' | 'xlsx';
+  format: 'json' | 'csv';
   fileName?: string;
   fields?: string[];
   includeHeaders?: boolean;
@@ -151,9 +150,6 @@ export class ExportService {
         case 'csv':
           await this.exportToCSV(data, filePath, options);
           break;
-        case 'xlsx':
-          await this.exportToXLSX(data, filePath, options);
-          break;
         default:
           throw new Error(`Formato de exportação não suportado: ${format}`);
       }
@@ -179,7 +175,7 @@ export class ExportService {
       // Preparar dados para CSV (achatar objetos aninhados)
       const flattenedData = data.map(item => this.flattenObject(item));
       
-      // Criar CSV manualmente (já que json2csv pode ter problemas)
+      // Criar CSV manualmente
       const fields = options.fields || Object.keys(flattenedData[0] || {});
       const delimiter = options.delimiter || ',';
       
@@ -210,34 +206,8 @@ export class ExportService {
     }
   }
 
-  private async exportToXLSX(
-    data: any[], 
-    filePath: string, 
-    options: ExportOptions
-  ): Promise<void> {
-    try {
-      // Preparar dados para XLSX (achatar objetos aninhados)
-      const flattenedData = data.map(item => this.flattenObject(item));
-      
-      // Criar pasta de trabalho e planilha
-      const worksheet = XLSX.utils.json_to_sheet(flattenedData, {
-        header: options.fields,
-        skipHeader: options.includeHeaders === false
-      });
-      
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
-      
-      // Escrever arquivo
-      XLSX.writeFile(workbook, filePath);
-    } catch (error) {
-      this.logger.error('Erro ao converter para XLSX:', error);
-      throw error;
-    }
-  }
-
   /**
-   * Achata objetos aninhados para CSV/XLSX
+   * Achata objetos aninhados para CSV
    * Exemplo: { user: { name: 'John' } } -> { 'user.name': 'John' }
    */
   private flattenObject(obj: any, prefix: string = ''): any {

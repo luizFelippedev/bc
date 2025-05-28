@@ -92,8 +92,8 @@ export class CacheService {
     });
 
     this.client.on('reconnecting', (delay: number) => {
-  this.logger.info(`Reconectando Redis em ${delay}ms...`);
-});
+      this.logger.info(`Reconectando Redis em ${delay}ms...`);
+    });
 
     this.client.on('end', () => {
       this.isConnected = false;
@@ -136,7 +136,7 @@ export class CacheService {
     }
   }
   
-/**
+  /**
    * Definir valor no cache
    */
   public async set(key: string, value: any, ttlOrOptions?: number | CacheOptions): Promise<boolean> {
@@ -167,7 +167,6 @@ export class CacheService {
       return false;
     }
   }
-  
 
   /**
    * Excluir chave do cache
@@ -271,143 +270,6 @@ export class CacheService {
   }
 
   /**
-   * Decrementar valor numérico
-   */
-  public async decrement(key: string, by: number = 1, options?: CacheOptions): Promise<number> {
-    try {
-      const fullKey = this.buildKey(key, options?.namespace);
-      const result = await this.client.decrby(fullKey, by);
-      
-      // Definir TTL se especificado
-      if (options?.ttl) {
-        await this.client.expire(fullKey, options.ttl);
-      }
-      
-      return result;
-    } catch (error) {
-      this.logger.error(`Erro ao decrementar chave ${key}:`, error);
-      return 0;
-    }
-  }
-
-  /**
-   * Operação batch para definir múltiplas chaves
-   */
-  public async setBatch(items: BatchSetItem[], namespace?: string): Promise<boolean> {
-    try {
-      const pipeline = this.client.pipeline();
-      
-      for (const item of items) {
-        const fullKey = this.buildKey(item.key, namespace);
-        const serializedValue = JSON.stringify(item.value);
-        const ttl = item.ttl || this.defaultTTL;
-        
-        if (ttl > 0) {
-          pipeline.setex(fullKey, ttl, serializedValue);
-        } else {
-          pipeline.set(fullKey, serializedValue);
-        }
-      }
-      
-      const results = await pipeline.exec();
-      const success = results?.every(result => result && result[0] === null);
-      
-      this.logger.debug(`Batch set executado para ${items.length} items`);
-      return success || false;
-    } catch (error) {
-      this.logger.error('Erro ao executar batch set:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Operação batch para obter múltiplas chaves
-   */
-  public async getBatch<T = any>(keys: string[], namespace?: string): Promise<Record<string, T | null>> {
-    try {
-      const fullKeys = keys.map(key => this.buildKey(key, namespace));
-      const values = await this.client.mget(...fullKeys);
-      
-      const result: Record<string, T | null> = {};
-      
-      keys.forEach((key, index) => {
-        const value = values[index];
-        result[key] = value ? JSON.parse(value) : null;
-      });
-      
-      this.logger.debug(`Batch get executado para ${keys.length} chaves`);
-      return result;
-    } catch (error) {
-      this.logger.error('Erro ao executar batch get:', error);
-      return {};
-    }
-  }
-
-  /**
-   * Limpar todo o cache
-   */
-  public async flushAll(): Promise<boolean> {
-    try {
-      await this.client.flushall();
-      this.logger.warn('Todo o cache foi limpo');
-      return true;
-    } catch (error) {
-      this.logger.error('Erro ao limpar todo o cache:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Limpar apenas as chaves com o prefixo do projeto
-   */
-  public async flushNamespace(namespace?: string): Promise<number> {
-    const pattern = namespace ? `${namespace}:*` : '*';
-    return await this.deletePattern(pattern);
-  }
-
-  /**
-   * Obter estatísticas do cache
-   */
-  public async getStats(): Promise<CacheStats> {
-    try {
-      const info = await this.client.info('stats', 'memory', 'clients');
-      const lines = info.split('\r\n');
-      
-      const stats: Record<string, string> = {};
-      lines.forEach(line => {
-        const [key, value] = line.split(':');
-        if (key && value) {
-          stats[key] = value;
-        }
-      });
-
-      const keyspaceHits = parseInt(stats.keyspace_hits || '0');
-      const keyspaceMisses = parseInt(stats.keyspace_misses || '0');
-      const total = keyspaceHits + keyspaceMisses;
-      const hitRate = total > 0 ? ((keyspaceHits / total) * 100).toFixed(2) + '%' : '0%';
-
-      return {
-        totalKeys: await this.client.dbsize(),
-        memoryUsage: this.formatBytes(parseInt(stats.used_memory || '0')),
-        connectedClients: parseInt(stats.connected_clients || '0'),
-        keyspaceHits,
-        keyspaceMisses,
-        hitRate
-      };
-    } catch (error) {
-      this.logger.error('Erro ao obter estatísticas do cache:', error);
-      return {
-        totalKeys: 0,
-        memoryUsage: '0 B',
-        connectedClients: 0,
-        keyspaceHits: 0,
-        keyspaceMisses: 0,
-        hitRate: '0%'
-      };
-    }
-  }
-
-  /**
    * Verificar se Redis está saudável
    */
   public async isHealthy(): Promise<boolean> {
@@ -432,18 +294,26 @@ export class CacheService {
     try {
       const fullKey = this.buildKey(key, namespace);
       
-      const [exists, type, ttl, size] = await Promise.all([
+      const [exists, type, ttl] = await Promise.all([
         this.client.exists(fullKey),
         this.client.type(fullKey),
-        this.client.ttl(fullKey),
-        this.client.memory('usage', fullKey).catch(() => null)
+        this.client.ttl(fullKey)
       ]);
+
+      // Tentar obter tamanho, mas não falhar se não conseguir
+      let size: number | undefined;
+      try {
+        size = await this.client.memory('USAGE', fullKey);
+      } catch (error) {
+        // Ignorar erro se comando MEMORY não estiver disponível
+        size = undefined;
+      }
 
       return {
         exists: exists === 1,
         type,
         ttl,
-        size: size || undefined
+        size
       };
     } catch (error) {
       this.logger.error(`Erro ao obter informações da chave ${key}:`, error);
@@ -491,20 +361,5 @@ export class CacheService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  /**
-   * Definir TTL padrão
-   */
-  public setDefaultTTL(ttl: number): void {
-    this.defaultTTL = ttl;
-    this.logger.debug(`TTL padrão definido para ${ttl} segundos`);
-  }
-
-  /**
-   * Obter TTL padrão
-   */
-  public getDefaultTTL(): number {
-    return this.defaultTTL;
   }
 }

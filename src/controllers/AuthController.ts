@@ -37,7 +37,7 @@ export class AuthController {
       
       // Gerar token JWT - CORRIGIDO
       const payload: JWTPayload = { 
-        id: user._id.toString(), 
+        id: (user._id as any).toString(), 
         role: user.role 
       };
       
@@ -128,7 +128,7 @@ export class AuthController {
       
       // Gerar novo token - CORRIGIDO
       const payload: JWTPayload = { 
-        id: user._id.toString(), 
+        id: (user._id as any).toString(), 
         role: user.role 
       };
       

@@ -66,7 +66,7 @@ export class MigrationService {
 
   private async ensureMigrationsCollection(): Promise<void> {
     const connection = this.database.getConnection();
-    if (connection) {
+    if (connection?.db) {
       const collections = await connection.db.listCollections({ name: 'migrations' }).toArray();
       if (collections.length === 0) {
         await connection.db.createCollection('migrations');
@@ -93,16 +93,16 @@ export class MigrationService {
   }
 
   private async getExecutedMigrations(): Promise<any[]> {
-  const connection = this.database.getConnection();
-  if (connection) {
-    return await connection.db.collection('migrations').find({}).toArray();
+    const connection = this.database.getConnection();
+    if (connection?.db) {
+      return await connection.db.collection('migrations').find({}).toArray();
+    }
+    return [];
   }
-  return [];
-}
 
   private async markMigrationAsExecuted(migration: Migration): Promise<void> {
     const connection = this.database.getConnection();
-    if (connection) {
+    if (connection?.db) {
       await connection.db.collection('migrations').insertOne({
         ...migration,
         executedAt: new Date()

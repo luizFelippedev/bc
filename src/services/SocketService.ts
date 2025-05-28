@@ -29,14 +29,14 @@ export class SocketService {
 
   private handleConnection(socket: Socket): void {
     this.logger.info(`Nova conexão WebSocket: ${socket.id}`);
-    
+
     const userInfo = {
       id: socket.id,
       connectedAt: new Date(),
       userAgent: socket.handshake.headers['user-agent'],
-      ip: socket.handshake.address
+      ip: socket.handshake.address,
     };
-    
+
     this.connectedUsers.set(socket.id, userInfo);
   }
 

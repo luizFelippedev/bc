@@ -31,36 +31,44 @@ export interface IConfiguration extends Document {
   updatedAt: Date;
 }
 
-const configurationSchema = new Schema<IConfiguration>({
-  profile: {
-    name: { type: String, required: true },
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    avatar: String,
-    location: String,
-    contactEmail: { type: String, required: true },
-    resumeUrl: String
+const configurationSchema = new Schema<IConfiguration>(
+  {
+    profile: {
+      name: { type: String, required: true },
+      title: { type: String, required: true },
+      description: { type: String, required: true },
+      avatar: String,
+      location: String,
+      contactEmail: { type: String, required: true },
+      resumeUrl: String,
+    },
+    socialLinks: [
+      {
+        platform: { type: String, required: true },
+        url: { type: String, required: true },
+        icon: String,
+      },
+    ],
+    siteSettings: {
+      title: { type: String, required: true },
+      description: { type: String, required: true },
+      language: { type: String, default: 'pt-BR' },
+      primaryColor: { type: String, default: '#3B82F6' },
+      secondaryColor: { type: String, default: '#10B981' },
+      darkMode: { type: Boolean, default: true },
+    },
+    seo: {
+      keywords: [String],
+      googleAnalyticsId: String,
+      metaImage: String,
+    },
   },
-  socialLinks: [{
-    platform: { type: String, required: true },
-    url: { type: String, required: true },
-    icon: String
-  }],
-  siteSettings: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    language: { type: String, default: 'pt-BR' },
-    primaryColor: { type: String, default: '#3B82F6' },
-    secondaryColor: { type: String, default: '#10B981' },
-    darkMode: { type: Boolean, default: true }
-  },
-  seo: {
-    keywords: [String],
-    googleAnalyticsId: String,
-    metaImage: String
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
-export const Configuration = model<IConfiguration>('Configuration', configurationSchema);
+export const Configuration = model<IConfiguration>(
+  'Configuration',
+  configurationSchema
+);

@@ -9,7 +9,7 @@ export const securityMiddleware = {
   rateLimiter: rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: 'Muitas requisições deste IP, tente novamente mais tarde'
+    message: 'Muitas requisições deste IP, tente novamente mais tarde',
   }),
 
   sanitizeInput: (req: Request, res: Response, next: NextFunction) => {
@@ -22,5 +22,5 @@ export const securityMiddleware = {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     next();
-  }
+  },
 };

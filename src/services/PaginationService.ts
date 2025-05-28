@@ -15,15 +15,19 @@ export class PaginationService {
       nextPage: hasNext ? page + 1 : null,
       prevPage: hasPrev ? page - 1 : null,
       startIndex: (page - 1) * limit + 1,
-      endIndex: Math.min(page * limit, total)
+      endIndex: Math.min(page * limit, total),
     };
   }
 
-  public static getPaginationLinks(baseUrl: string, page: number, totalPages: number) {
+  public static getPaginationLinks(
+    baseUrl: string,
+    page: number,
+    totalPages: number
+  ) {
     const links: any = {
       self: `${baseUrl}?page=${page}`,
       first: `${baseUrl}?page=1`,
-      last: `${baseUrl}?page=${totalPages}`
+      last: `${baseUrl}?page=${totalPages}`,
     };
 
     if (page > 1) {

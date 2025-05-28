@@ -46,22 +46,22 @@ export class SearchService {
    */
   public async search(options: SearchOptions): Promise<SearchResult> {
     const startTime = Date.now();
-    
+
     try {
-      this.logger.debug('Iniciando busca', { 
-        query: options.query, 
-        type: options.type 
+      this.logger.debug('Iniciando busca', {
+        query: options.query,
+        type: options.type,
       });
 
       // Verificar cache primeiro
       const cacheKey = this.generateCacheKey(options);
       const cachedResult = await this.cacheService.get<SearchResult>(cacheKey);
-      
+
       if (cachedResult) {
         this.logger.debug('Resultado encontrado em cache', { cacheKey });
         return {
           ...cachedResult,
-          took: Date.now() - startTime
+          took: Date.now() - startTime,
         };
       }
 
@@ -69,16 +69,24 @@ export class SearchService {
         projects: [],
         certificates: [],
         total: 0,
-        took: 0
+        took: 0,
       };
 
       // Buscar em projetos
-      if (options.type === 'all' || options.type === 'projects' || !options.type) {
+      if (
+        options.type === 'all' ||
+        options.type === 'projects' ||
+        !options.type
+      ) {
         result.projects = await this.searchProjects(options);
       }
 
       // Buscar em certificados
-      if (options.type === 'all' || options.type === 'certificates' || !options.type) {
+      if (
+        options.type === 'all' ||
+        options.type === 'certificates' ||
+        !options.type
+      ) {
         result.certificates = await this.searchCertificates(options);
       }
 
@@ -93,7 +101,7 @@ export class SearchService {
         projectsFound: result.projects.length,
         certificatesFound: result.certificates.length,
         totalFound: result.total,
-        took: result.took
+        took: result.took,
       });
 
       return result;
@@ -103,7 +111,7 @@ export class SearchService {
         projects: [],
         certificates: [],
         total: 0,
-        took: Date.now() - startTime
+        took: Date.now() - startTime,
       };
     }
   }
@@ -115,7 +123,7 @@ export class SearchService {
     try {
       const query: any = {
         isActive: true,
-        visibility: 'public'
+        visibility: 'public',
       };
 
       // Busca por texto
@@ -137,15 +145,17 @@ export class SearchService {
       }
 
       const projects = await Project.find(query)
-        .select('title slug shortDescription category featured status images technologies tags views')
+        .select(
+          'title slug shortDescription category featured status images technologies tags views'
+        )
         .sort({ featured: -1, views: -1, createdAt: -1 })
         .limit(options.limit || 20)
         .skip(options.offset || 0)
         .lean();
 
-      return projects.map(project => ({
+      return projects.map((project) => ({
         ...project,
-        type: 'project'
+        type: 'project',
       }));
     } catch (error) {
       this.logger.error('Erro na busca de projetos:', error);
@@ -159,7 +169,7 @@ export class SearchService {
   private async searchCertificates(options: SearchOptions): Promise<any[]> {
     try {
       const query: any = {
-        isActive: true
+        isActive: true,
       };
 
       // Busca por texto
@@ -187,9 +197,9 @@ export class SearchService {
         .skip(options.offset || 0)
         .lean();
 
-      return certificates.map(certificate => ({
+      return certificates.map((certificate) => ({
         ...certificate,
-        type: 'certificate'
+        type: 'certificate',
       }));
     } catch (error) {
       this.logger.error('Erro na busca de certificados:', error);
@@ -200,7 +210,10 @@ export class SearchService {
   /**
    * Busca por sugestões/autocompletar
    */
-  public async getSuggestions(query: string, limit: number = 10): Promise<string[]> {
+  public async getSuggestions(
+    query: string,
+    limit: number = 10
+  ): Promise<string[]> {
     try {
       if (!query || query.length < 2) {
         return [];
@@ -208,7 +221,7 @@ export class SearchService {
 
       const cacheKey = `search:suggestions:${query}:${limit}`;
       const cached = await this.cacheService.get<string[]>(cacheKey);
-      
+
       if (cached) {
         return cached;
       }
@@ -219,37 +232,37 @@ export class SearchService {
       const projects = await Project.find({
         title: { $regex: query, $options: 'i' },
         isActive: true,
-        visibility: 'public'
+        visibility: 'public',
       })
-      .select('title')
-      .limit(limit)
-      .lean();
+        .select('title')
+        .limit(limit)
+        .lean();
 
-      projects.forEach(project => suggestions.add(project.title));
+      projects.forEach((project) => suggestions.add(project.title));
 
       // Buscar títulos de certificados
       const certificates = await Certificate.find({
         title: { $regex: query, $options: 'i' },
-        isActive: true
+        isActive: true,
       })
-      .select('title')
-      .limit(limit)
-      .lean();
+        .select('title')
+        .limit(limit)
+        .lean();
 
-      certificates.forEach(cert => suggestions.add(cert.title));
+      certificates.forEach((cert) => suggestions.add(cert.title));
 
       // Buscar tags de projetos
       const projectsWithTags = await Project.find({
         tags: { $regex: query, $options: 'i' },
         isActive: true,
-        visibility: 'public'
+        visibility: 'public',
       })
-      .select('tags')
-      .limit(5)
-      .lean();
+        .select('tags')
+        .limit(5)
+        .lean();
 
-      projectsWithTags.forEach(project => {
-        project.tags?.forEach(tag => {
+      projectsWithTags.forEach((project) => {
+        project.tags?.forEach((tag) => {
           if (tag.toLowerCase().includes(query.toLowerCase())) {
             suggestions.add(tag);
           }
@@ -275,7 +288,7 @@ export class SearchService {
     try {
       const cacheKey = `search:popular:${limit}`;
       const cached = await this.cacheService.get<string[]>(cacheKey);
-      
+
       if (cached) {
         return cached;
       }
@@ -284,21 +297,21 @@ export class SearchService {
       // Por enquanto, vamos retornar termos populares baseados em views
       const popularProjects = await Project.find({
         isActive: true,
-        visibility: 'public'
+        visibility: 'public',
       })
-      .select('title tags')
-      .sort({ views: -1 })
-      .limit(limit)
-      .lean();
+        .select('title tags')
+        .sort({ views: -1 })
+        .limit(limit)
+        .lean();
 
       const popularTerms = new Set<string>();
 
-      popularProjects.forEach(project => {
+      popularProjects.forEach((project) => {
         // Adicionar título
         popularTerms.add(project.title);
-        
+
         // Adicionar tags
-        project.tags?.forEach(tag => popularTerms.add(tag));
+        project.tags?.forEach((tag) => popularTerms.add(tag));
       });
 
       const result = Array.from(popularTerms).slice(0, limit);
@@ -324,47 +337,48 @@ export class SearchService {
     try {
       const cacheKey = 'search:facets';
       const cached = await this.cacheService.get(cacheKey);
-      
+
       if (cached) {
         return cached;
       }
 
-      const [projectCategories, projectStatuses, certificateLevels] = await Promise.all([
-        // Categorias de projetos
-        Project.aggregate([
-          { $match: { isActive: true, visibility: 'public' } },
-          { $group: { _id: '$category', count: { $sum: 1 } } },
-          { $sort: { count: -1 } }
-        ]),
-        
-        // Status de projetos
-        Project.aggregate([
-          { $match: { isActive: true, visibility: 'public' } },
-          { $group: { _id: '$status', count: { $sum: 1 } } },
-          { $sort: { count: -1 } }
-        ]),
-        
-        // Níveis de certificados
-        Certificate.aggregate([
-          { $match: { isActive: true } },
-          { $group: { _id: '$level', count: { $sum: 1 } } },
-          { $sort: { count: -1 } }
-        ])
-      ]);
+      const [projectCategories, projectStatuses, certificateLevels] =
+        await Promise.all([
+          // Categorias de projetos
+          Project.aggregate([
+            { $match: { isActive: true, visibility: 'public' } },
+            { $group: { _id: '$category', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ]),
+
+          // Status de projetos
+          Project.aggregate([
+            { $match: { isActive: true, visibility: 'public' } },
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ]),
+
+          // Níveis de certificados
+          Certificate.aggregate([
+            { $match: { isActive: true } },
+            { $group: { _id: '$level', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ]),
+        ]);
 
       const facets = {
-        categories: projectCategories.map(c => ({ 
-          name: c._id, 
-          count: c.count 
+        categories: projectCategories.map((c) => ({
+          name: c._id,
+          count: c.count,
         })),
-        statuses: projectStatuses.map(s => ({ 
-          name: s._id, 
-          count: s.count 
+        statuses: projectStatuses.map((s) => ({
+          name: s._id,
+          count: s.count,
         })),
-        levels: certificateLevels.map(l => ({ 
-          name: l._id, 
-          count: l.count 
-        }))
+        levels: certificateLevels.map((l) => ({
+          name: l._id,
+          count: l.count,
+        })),
       };
 
       // Cache por 1 hora
@@ -376,7 +390,7 @@ export class SearchService {
       return {
         categories: [],
         statuses: [],
-        levels: []
+        levels: [],
       };
     }
   }
@@ -390,7 +404,7 @@ export class SearchService {
       options.query || 'empty',
       options.type || 'all',
       options.limit || 20,
-      options.offset || 0
+      options.offset || 0,
     ];
 
     if (options.filters) {

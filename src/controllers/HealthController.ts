@@ -17,10 +17,13 @@ export class HealthController {
   public async getHealth(req: Request, res: Response): Promise<void> {
     try {
       const summary = await this.healthService.getStatusSummary();
-      res.status(summary.status === 'healthy' ? 200 : 503)
-         .json(ApiResponse.success(summary));
+      res
+        .status(summary.status === 'healthy' ? 200 : 503)
+        .json(ApiResponse.success(summary));
     } catch (error) {
-      res.status(500).json(ApiResponse.error('Erro ao verificar saúde da aplicação'));
+      res
+        .status(500)
+        .json(ApiResponse.error('Erro ao verificar saúde da aplicação'));
     }
   }
 
@@ -31,12 +34,22 @@ export class HealthController {
   public async getDetailedHealth(req: Request, res: Response): Promise<void> {
     try {
       const status = await this.healthService.getStatus();
-      
-      res.status(status.status === 'healthy' ? 200 : 
-                 status.status === 'degraded' ? 200 : 503)
-         .json(ApiResponse.success(status));
+
+      res
+        .status(
+          status.status === 'healthy'
+            ? 200
+            : status.status === 'degraded'
+              ? 200
+              : 503
+        )
+        .json(ApiResponse.success(status));
     } catch (error) {
-      res.status(500).json(ApiResponse.error('Erro ao verificar saúde detalhada da aplicação'));
+      res
+        .status(500)
+        .json(
+          ApiResponse.error('Erro ao verificar saúde detalhada da aplicação')
+        );
     }
   }
 
@@ -47,12 +60,20 @@ export class HealthController {
   public async checkHealth(req: Request, res: Response): Promise<void> {
     try {
       const status = await this.healthService.checkHealth();
-      
-      res.status(status.status === 'healthy' ? 200 : 
-                 status.status === 'degraded' ? 200 : 503)
-         .json(ApiResponse.success(status));
+
+      res
+        .status(
+          status.status === 'healthy'
+            ? 200
+            : status.status === 'degraded'
+              ? 200
+              : 503
+        )
+        .json(ApiResponse.success(status));
     } catch (error) {
-      res.status(500).json(ApiResponse.error('Erro ao verificar saúde da aplicação'));
+      res
+        .status(500)
+        .json(ApiResponse.error('Erro ao verificar saúde da aplicação'));
     }
   }
 }

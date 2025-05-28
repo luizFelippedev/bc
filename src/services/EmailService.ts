@@ -1,6 +1,6 @@
 // src/services/EmailService.ts - Serviço de Email Avançado
 import { LoggerService } from './LoggerService';
-import { RedisService } from './RedisService';
+import { CacheService } from './CacheService';
 import handlebars from 'handlebars';
 import fs from 'fs/promises';
 import path from 'path';
@@ -28,12 +28,12 @@ export class EmailService {
   private static instance: EmailService;
   private transporter!: nodemailer.Transporter;
   private logger: LoggerService;
-  private redis: RedisService;
+  private cache: CacheService;
   private templates: Map<string, handlebars.TemplateDelegate> = new Map();
 
   private constructor() {
     this.logger = LoggerService.getInstance();
-    this.redis = RedisService.getInstance();
+    this.cache = CacheService.getInstance();
     this.setupTransporter();
     this.loadTemplates();
   }
@@ -46,7 +46,7 @@ export class EmailService {
   }
 
   private setupTransporter(): void {
-  this.transporter = nodemailer.createTransport({
+    this.transporter = nodemailer.createTransporter({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: false,
@@ -138,14 +138,14 @@ export class EmailService {
       }
 
     } catch (error) {
-  this.logger.error('Failed to send email:', error);
+      this.logger.error('Failed to send email:', error);
       
       await this.logEmailSent({
         to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
         subject: options.subject,
         template: options.template,
         status: 'failed',
-        error: (error as Error).message
+        error: error instanceof Error ? error.message : String(error)
       });
       
       throw error;
@@ -191,7 +191,7 @@ export class EmailService {
       scheduleTime
     };
 
-    await this.redis.getClient().zadd(
+    await this.cache.getClient().zadd(
       'scheduled_emails',
       scheduleTime,
       JSON.stringify(emailData)
@@ -206,7 +206,7 @@ export class EmailService {
   public async processScheduledEmails(): Promise<void> {
     try {
       const now = Date.now();
-      const scheduledEmails = await this.redis.getClient().zrangebyscore(
+      const scheduledEmails = await this.cache.getClient().zrangebyscore(
         'scheduled_emails',
         0,
         now,
@@ -228,17 +228,20 @@ export class EmailService {
           });
 
           // Remove from scheduled
-          await this.redis.getClient().zrem('scheduled_emails', scheduledEmails[i]);
+          await this.cache.getClient().zrem('scheduled_emails', scheduledEmails[i]);
         } catch (error) {
           this.logger.error('Failed to send scheduled email:', error);
           
           // Move to failed queue
-          await this.redis.getClient().lpush(
+          await this.cache.getClient().lpush(
             'failed_emails',
-            JSON.stringify({ ...emailData, error: error.message })
+            JSON.stringify({ 
+              ...emailData, 
+              error: error instanceof Error ? error.message : String(error) 
+            })
           );
           
-          await this.redis.getClient().zrem('scheduled_emails', scheduledEmails[i]);
+          await this.cache.getClient().zrem('scheduled_emails', scheduledEmails[i]);
         }
       }
     } catch (error) {
@@ -252,13 +255,13 @@ export class EmailService {
       timestamp: new Date()
     };
 
-    await this.redis.getClient().lpush('email_logs', JSON.stringify(logEntry));
-    await this.redis.getClient().ltrim('email_logs', 0, 9999); // Keep last 10k logs
+    await this.cache.getClient().lpush('email_logs', JSON.stringify(logEntry));
+    await this.cache.getClient().ltrim('email_logs', 0, 9999); // Keep last 10k logs
   }
 
   public async getEmailStats(timeframe: 'day' | 'week' | 'month'): Promise<any> {
     // Implementation for email statistics
-    const logs = await this.redis.getClient().lrange('email_logs', 0, -1);
+    const logs = await this.cache.getClient().lrange('email_logs', 0, -1);
     
     const parsedLogs = logs.map(log => JSON.parse(log))
       .filter(log => {
@@ -287,7 +290,7 @@ export class EmailService {
   }
 
   private getTemplateStats(logs: any[]): any {
-    const templateStats = {};
+    const templateStats: Record<string, number> = {};
     
     logs.forEach(log => {
       if (log.template) {

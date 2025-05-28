@@ -45,16 +45,19 @@ export class RateLimitMiddleware {
 
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const key = keyGenerator(req);
+        let key = keyGenerator(req);
         
-        // CORRIGIDO: Verificar se key é válido
-        if (!key || key === 'undefined') {
-          this.logger.warn('Invalid key for rate limiting, using fallback');
-          await limiter.consume(req.ip || 'fallback');
-        } else {
-          await limiter.consume(key);
+        // CORRIGIDO: Garantir que a chave seja válida
+        if (!key || key === 'undefined' || key === 'null') {
+          key = req.ip || req.socket.remoteAddress || 'anonymous';
         }
         
+        // Se ainda não tiver uma chave válida, usar um fallback
+        if (!key) {
+          key = 'fallback_' + Date.now();
+        }
+        
+        await limiter.consume(key);
         next();
       } catch (error: any) {
         if (error.msBeforeNext) {
@@ -72,6 +75,7 @@ export class RateLimitMiddleware {
           
           next(ApiError.tooManyRequests(`Muitas requisições. Tente novamente em ${Math.ceil(error.msBeforeNext / 1000)} segundos`));
         } else {
+          this.logger.error('Erro no rate limiter:', error);
           next(ApiError.internal('Erro ao verificar rate limit'));
         }
       }

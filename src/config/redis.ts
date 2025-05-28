@@ -15,7 +15,7 @@ export const createRedisClient = () => {
       return delay;
     },
     maxRetriesPerRequest: 3,
-    enableReadyCheck: true
+    enableReadyCheck: true,
   });
 
   redis.on('connect', () => {

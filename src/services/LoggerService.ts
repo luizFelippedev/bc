@@ -8,7 +8,7 @@ export enum LogLevel {
   ERROR = 'error',
   WARN = 'warn',
   INFO = 'info',
-  DEBUG = 'debug'
+  DEBUG = 'debug',
 }
 
 export class LoggerService {
@@ -17,15 +17,16 @@ export class LoggerService {
 
   private constructor() {
     const logsDir = path.join(process.cwd(), 'logs');
-    
+
     // Criar diretório de logs se não existir
     if (!fs.existsSync(logsDir)) {
       fs.mkdirSync(logsDir, { recursive: true });
     }
-    
+
     // Formatos de log
-    const { combine, timestamp, printf, colorize, json, errors } = winston.format;
-    
+    const { combine, timestamp, printf, colorize, json, errors } =
+      winston.format;
+
     // Formato para desenvolvimento (console)
     const consoleFormat = combine(
       colorize(),
@@ -33,66 +34,66 @@ export class LoggerService {
       errors({ stack: true }),
       printf(({ timestamp, level, message, stack, ...meta }) => {
         let log = `${timestamp} ${level}: ${message}`;
-        
+
         if (stack) {
           log += `\n${stack}`;
         }
-        
+
         if (Object.keys(meta).length > 0) {
           log += `\n${JSON.stringify(meta, null, 2)}`;
         }
-        
+
         return log;
       })
     );
-    
+
     // Formato para produção (JSON)
-    const fileFormat = combine(
-      timestamp(),
-      errors({ stack: true }),
-      json()
-    );
-    
+    const fileFormat = combine(timestamp(), errors({ stack: true }), json());
+
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'warn' : 'info'),
+      level:
+        process.env.LOG_LEVEL ||
+        (process.env.NODE_ENV === 'production' ? 'warn' : 'info'),
       format: fileFormat,
-      defaultMeta: { 
+      defaultMeta: {
         service: 'portfolio-backend',
         environment: process.env.NODE_ENV,
-        version: process.env.npm_package_version || '1.0.0'
+        version: process.env.npm_package_version || '1.0.0',
       },
       transports: [
         // Log de erro em arquivo
-        new winston.transports.File({ 
-          filename: path.join(logsDir, 'error.log'), 
+        new winston.transports.File({
+          filename: path.join(logsDir, 'error.log'),
           level: 'error',
           maxsize: 5242880, // 5MB
-          maxFiles: 5
+          maxFiles: 5,
         }),
         // Log combinado em arquivo
-        new winston.transports.File({ 
+        new winston.transports.File({
           filename: path.join(logsDir, 'combined.log'),
           maxsize: 5242880, // 5MB
-          maxFiles: 5
-        })
+          maxFiles: 5,
+        }),
       ],
       exceptionHandlers: [
-        new winston.transports.File({ 
-          filename: path.join(logsDir, 'exceptions.log') 
-        })
+        new winston.transports.File({
+          filename: path.join(logsDir, 'exceptions.log'),
+        }),
       ],
       rejectionHandlers: [
-        new winston.transports.File({ 
-          filename: path.join(logsDir, 'rejections.log') 
-        })
-      ]
+        new winston.transports.File({
+          filename: path.join(logsDir, 'rejections.log'),
+        }),
+      ],
     });
-    
+
     // Em desenvolvimento, log também no console
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.add(new winston.transports.Console({
-        format: consoleFormat
-      }));
+      this.logger.add(
+        new winston.transports.Console({
+          format: consoleFormat,
+        })
+      );
     }
   }
 
@@ -131,7 +132,7 @@ export class LoggerService {
       userAgent: req.get('user-agent'),
       ip: req.ip,
       userId: (req as any).user?.id,
-      contentLength: res.get('content-length') || 0
+      contentLength: res.get('content-length') || 0,
     };
 
     if (res.statusCode >= 400) {

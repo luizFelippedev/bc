@@ -24,18 +24,24 @@ export class PerformanceMonitoringService {
 
   public static getInstance(): PerformanceMonitoringService {
     if (!PerformanceMonitoringService.instance) {
-      PerformanceMonitoringService.instance = new PerformanceMonitoringService();
+      PerformanceMonitoringService.instance =
+        new PerformanceMonitoringService();
     }
     return PerformanceMonitoringService.instance;
   }
 
-  public recordMetric(name: string, value: number, unit: string, labels?: Record<string, string>): void {
+  public recordMetric(
+    name: string,
+    value: number,
+    unit: string,
+    labels?: Record<string, string>
+  ): void {
     const metric: PerformanceMetric = {
       name,
       value,
       unit,
       timestamp: new Date(),
-      labels
+      labels,
     };
 
     if (!this.metrics.has(name)) {
@@ -58,7 +64,7 @@ export class PerformanceMonitoringService {
     try {
       const key = `metrics:${metric.name}:${new Date().toISOString().split('T')[0]}`;
       const data = JSON.stringify(metric);
-      
+
       await this.redis.getClient().lpush(key, data);
       await this.redis.getClient().expire(key, 86400 * 30); // 30 dias
     } catch (error) {
@@ -71,11 +77,14 @@ export class PerformanceMonitoringService {
     return metrics.slice(-limit);
   }
 
-  public async getAggregatedMetrics(name: string, timeframe: 'hour' | 'day' | 'week'): Promise<any> {
+  public async getAggregatedMetrics(
+    name: string,
+    timeframe: 'hour' | 'day' | 'week'
+  ): Promise<any> {
     try {
       const now = new Date();
       let startTime: Date;
-      
+
       switch (timeframe) {
         case 'hour':
           startTime = new Date(now.getTime() - 60 * 60 * 1000);
@@ -88,22 +97,23 @@ export class PerformanceMonitoringService {
           break;
       }
 
-      const metrics = this.getMetrics(name, 10000)
-        .filter(m => m.timestamp >= startTime);
+      const metrics = this.getMetrics(name, 10000).filter(
+        (m) => m.timestamp >= startTime
+      );
 
       if (metrics.length === 0) {
         return null;
       }
 
-      const values = metrics.map(m => m.value);
-      
+      const values = metrics.map((m) => m.value);
+
       return {
         count: values.length,
         min: Math.min(...values),
         max: Math.max(...values),
         avg: values.reduce((sum, val) => sum + val, 0) / values.length,
         p95: this.calculatePercentile(values, 95),
-        p99: this.calculatePercentile(values, 99)
+        p99: this.calculatePercentile(values, 99),
       };
     } catch (error) {
       this.logger.error('Failed to get aggregated metrics:', error);
@@ -128,7 +138,7 @@ export class PerformanceMonitoringService {
     try {
       const memUsage = process.memoryUsage();
       const cpuUsage = process.cpuUsage();
-      
+
       this.recordMetric('memory_heap_used', memUsage.heapUsed, 'bytes');
       this.recordMetric('memory_heap_total', memUsage.heapTotal, 'bytes');
       this.recordMetric('memory_rss', memUsage.rss, 'bytes');

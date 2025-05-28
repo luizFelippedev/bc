@@ -2,7 +2,7 @@
 const loginResponse = await fetch('/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
+  body: JSON.stringify({ email, password }),
 });
 
 const { data } = await loginResponse.json();
@@ -12,7 +12,7 @@ localStorage.setItem('token', data.token);
 const token = localStorage.getItem('token');
 const response = await fetch('/api/admin/projects', {
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
 });

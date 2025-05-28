@@ -67,7 +67,7 @@ export class App {
     this.app.use(LoggerMiddleware.requestLogger());
     
     // Compressão de resposta - CORRIGIDO
-    this.app.use(compression() as express.RequestHandler);
+    this.app.use(compression());
     
     // Trust proxy (para obter IP real atrás de proxies)
     this.app.set('trust proxy', 1);
@@ -81,9 +81,13 @@ export class App {
     
     // Configurar session com Redis se habilitado - CORRIGIDO
     if (config.session?.enabled && redisClient) {
-      const RedisStore = ConnectRedis(session);
+      const RedisStore = new ConnectRedis({
+        client: redisClient,
+        prefix: 'sess:'
+      });
+      
       this.app.use(session({
-        store: new RedisStore({ client: redisClient }),
+        store: RedisStore,
         secret: config.session.secret,
         resave: false,
         saveUninitialized: false,
@@ -107,8 +111,7 @@ export class App {
     this.app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
     
     // Swagger API docs - CORRIGIDO
-    this.app.use('/docs', swaggerUi.serve);
-    this.app.get('/docs', swaggerUi.setup(swaggerSpec));
+    this.app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   }
 
   private setupRoutes(): void {

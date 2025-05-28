@@ -28,17 +28,21 @@ export const authMiddleware = {
       // Extrair token do header Authorization
       const token = req.headers.authorization?.split(' ')[1];
       if (!token) {
-        return res.status(401).json({ success: false, message: 'Token não fornecido' });
+        return res
+          .status(401)
+          .json({ success: false, message: 'Token não fornecido' });
       }
-      
+
       // Verificar token
       const decoded = jwt.verify(token, config.jwt.secret) as DecodedToken;
       req.user = decoded;
-      
+
       next();
     } catch (error) {
       logger.error('Erro na autenticação:', error);
-      return res.status(401).json({ success: false, message: 'Token inválido' });
+      return res
+        .status(401)
+        .json({ success: false, message: 'Token inválido' });
     }
   },
 
@@ -48,9 +52,11 @@ export const authMiddleware = {
   authorize: (roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
       if (!req.user || !roles.includes(req.user.role)) {
-        return res.status(403).json({ success: false, message: 'Acesso negado' });
+        return res
+          .status(403)
+          .json({ success: false, message: 'Acesso negado' });
       }
       next();
     };
-  }
+  },
 };

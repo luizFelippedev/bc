@@ -31,7 +31,7 @@ export class RedisService {
         return delay;
       },
       maxRetriesPerRequest: 3,
-      enableOfflineQueue: false
+      enableOfflineQueue: false,
     });
   }
 

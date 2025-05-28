@@ -49,12 +49,10 @@ export const config: AppConfig = {
     mongodb: {
       uri: process.env.MONGODB_URI || '',
       options: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-      }
+      } as ConnectOptions
     },
     redis: {
       host: process.env.REDIS_HOST || 'localhost',

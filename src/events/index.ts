@@ -25,18 +25,18 @@ export const EVENT_TYPES = {
     UPDATED: 'user:updated',
     DELETED: 'user:deleted',
     LOGIN: 'user:login',
-    LOGOUT: 'user:logout'
+    LOGOUT: 'user:logout',
   },
   PROJECT: {
     CREATED: 'project:created',
     UPDATED: 'project:updated',
     DELETED: 'project:deleted',
-    VIEWED: 'project:viewed'
+    VIEWED: 'project:viewed',
   },
   SYSTEM: {
     ERROR: 'system:error',
     WARNING: 'system:warning',
     BACKUP_STARTED: 'system:backup:started',
-    BACKUP_COMPLETED: 'system:backup:completed'
-  }
+    BACKUP_COMPLETED: 'system:backup:completed',
+  },
 };

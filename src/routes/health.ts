@@ -9,15 +9,17 @@ const router = Router();
 router.get('/', healthController.getHealth.bind(healthController));
 
 // Rotas protegidas - apenas para administradores
-router.get('/detailed', 
-  authMiddleware.authenticate, 
-  authMiddleware.authorize(['admin']), 
+router.get(
+  '/detailed',
+  authMiddleware.authenticate,
+  authMiddleware.authorize(['admin']),
   healthController.getDetailedHealth.bind(healthController)
 );
 
-router.get('/check', 
-  authMiddleware.authenticate, 
-  authMiddleware.authorize(['admin']), 
+router.get(
+  '/check',
+  authMiddleware.authenticate,
+  authMiddleware.authorize(['admin']),
   healthController.checkHealth.bind(healthController)
 );
 

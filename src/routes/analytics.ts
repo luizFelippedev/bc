@@ -14,7 +14,10 @@ router.use(authMiddleware.authorize(['admin']));
 router.use(RateLimitMiddleware.adminLimiter);
 
 // Rotas de analytics
-router.get('/dashboard', adminController.getDashboardData.bind(adminController));
+router.get(
+  '/dashboard',
+  adminController.getDashboardData.bind(adminController)
+);
 router.get('/detailed', adminController.getAnalytics.bind(adminController));
 router.get('/realtime', adminController.getRealTimeStats.bind(adminController));
 
