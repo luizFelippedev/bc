@@ -4,7 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import RedisStore from 'connect-redis'; // ✅ CORREÇÃO: Import direto para v7+
+import ConnectRedis from 'connect-redis';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -82,69 +82,47 @@ export class App {
     if (config.session?.enabled) {
       try {
         const cacheService = CacheService.getInstance();
-        const redisClient = cacheService.getClient();
+        const RedisStore = ConnectRedis(session) as any;
 
-        // ✅ CORREÇÃO: Verificar se o Redis está realmente conectado
-        if (redisClient && redisClient.isReady) {
-          this.app.use(session({
-            store: new RedisStore({ 
-              client: redisClient as any,
-              prefix: 'portfolio:sess:',
-              ttl: 24 * 60 * 60 // 24 horas em segundos
-            }),
-            secret: config.session.secret,
-            resave: false,
-            saveUninitialized: false,
-            rolling: true, // Renovar cookie a cada request
-            cookie: {
-              secure: process.env.NODE_ENV === 'production',
-              httpOnly: true,
-              maxAge: config.session.maxAge,
-              sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
-            },
-            name: 'portfolio.session'
-          }) as any);
+        this.app.use(session({
+          store: new RedisStore({ 
+            client: cacheService.getClient() as any,
+            prefix: 'sess:'
+          }),
+          secret: config.session.secret,
+          resave: false,
+          saveUninitialized: false,
+          cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            maxAge: config.session.maxAge
+          }
+        }) as any);
 
-          this.logger.info('✅ Session configurada com Redis');
-        } else {
-          throw new Error('Redis client não está conectado');
-        }
-
+        this.logger.info('✅ Session configurada com Redis');
       } catch (error) {
-        this.logger.warn('⚠️  Redis não disponível, configurando session in-memory:', error);
+        this.logger.warn('⚠️  Session configurada sem Redis (in-memory):', error);
 
-        // ✅ Fallback para session in-memory
         this.app.use(session({
           secret: config.session.secret,
           resave: false,
           saveUninitialized: false,
-          rolling: true,
           cookie: {
-            secure: false, // Sempre false para in-memory
+            secure: false,
             httpOnly: true,
-            maxAge: config.session.maxAge,
-            sameSite: 'lax'
-          },
-          name: 'portfolio.session'
+            maxAge: config.session.maxAge
+          }
         }) as any);
-
-        this.logger.info('✅ Session configurada em modo in-memory');
       }
-    } else {
-      this.logger.info('📝 Sessions desabilitadas na configuração');
     }
   }
 
   private setupRoutes(): void {
-    // Health check sempre primeiro
     this.app.use('/health', healthRoutes);
-    
-    // API routes
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/public', publicRoutes);
     this.app.use('/api/admin', adminRoutes);
 
-    // Root endpoint
     this.app.get('/', (req: Request, res: Response) => {
       res.json({
         name: 'Portfolio API',
@@ -153,32 +131,13 @@ export class App {
         docs: '/docs',
         health: '/health',
         status: 'running',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-      });
-    });
-
-    // API info endpoint
-    this.app.get('/api', (req: Request, res: Response) => {
-      res.json({
-        message: 'Portfolio API',
-        version: process.env.npm_package_version || '1.0.0',
-        documentation: '/docs',
-        endpoints: {
-          auth: '/api/auth',
-          public: '/api/public',
-          admin: '/api/admin',
-          health: '/health'
-        }
+        timestamp: new Date().toISOString()
       });
     });
   }
 
   private setupErrorHandling(): void {
-    // 404 handler
     this.app.use(ErrorHandlerMiddleware.notFound);
-    
-    // Global error handler
     this.app.use(ErrorHandlerMiddleware.handleError);
   }
 
@@ -194,33 +153,15 @@ export class App {
 
   public async start(): Promise<void> {
     try {
-      // Iniciar monitoramento de saúde
       this.healthService.startMonitoring();
 
       const port = config.port;
-      
-      // Iniciar servidor HTTP
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         this.server.listen(port, () => {
           this.logger.info(`🚀 Servidor iniciado na porta ${port}`);
           resolve();
-        }).on('error', (err) => {
-          this.logger.error('❌ Erro ao iniciar servidor:', err);
-          reject(err);
         });
       });
-
-      // Log de informações úteis
-      this.logger.info(`🌍 Servidor rodando: http://localhost:${port}`);
-      this.logger.info(`📚 API Docs: http://localhost:${port}/docs`);
-      this.logger.info(`💾 Health: http://localhost:${port}/health`);
-
-      // Informações de desenvolvimento
-      if (process.env.NODE_ENV === 'development') {
-        this.logger.info('🔧 Modo de desenvolvimento ativo');
-        this.logger.info(`🔐 Admin login: http://localhost:${port}/api/auth/login`);
-        this.logger.info('📧 Email: admin@portfolio.com | Senha: admin123');
-      }
 
     } catch (error) {
       this.logger.error('❌ Falha ao iniciar aplicação:', error);
@@ -232,43 +173,28 @@ export class App {
     try {
       this.logger.info('📴 Iniciando shutdown graceful...');
 
-      // Parar monitoramento
       this.healthService.stopMonitoring();
-      
-      // Desconectar WebSocket
-      if (this.socketService) {
-        this.io.disconnectSockets(true);
-      }
+      this.io.disconnectSockets(true);
 
-      // Fechar servidor HTTP
       await new Promise<void>((resolve, reject) => {
         this.server.close((err) => {
-          if (err) {
-            this.logger.error('❌ Erro ao fechar servidor:', err);
-            return reject(err);
-          }
-          this.logger.info('✅ Servidor HTTP fechado');
+          if (err) return reject(err);
           resolve();
         });
       });
 
-      this.logger.info('✅ Shutdown concluído com sucesso');
+      this.logger.info('✅ Shutdown concluído');
     } catch (error) {
       this.logger.error('❌ Erro durante shutdown:', error);
       throw error;
     }
   }
 
-  // Getters públicos
   public getApp(): Application {
     return this.app;
   }
 
   public getServer(): HttpServer {
     return this.server;
-  }
-
-  public getIO(): SocketIOServer {
-    return this.io;
   }
 }
