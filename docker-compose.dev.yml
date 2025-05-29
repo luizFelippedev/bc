@@ -1,0 +1,194 @@
+# ===== Docker Compose Development - Portfolio Backend =====
+version: '3.8'
+
+services:
+  # Aplicação em Desenvolvimento
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: portfolio-api-dev
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_URI=mongodb://portfolio-user:portfolio123@mongodb-dev:27017/portfolio_development?authSource=admin
+      - REDIS_HOST=redis-dev
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis123
+      - JWT_SECRET=development-jwt-secret-change-in-production
+      - JWT_REFRESH_SECRET=development-refresh-secret-change-in-production
+      - ADMIN_EMAIL=admin@portfolio.com
+      - ADMIN_PASSWORD=admin123
+      - LOG_LEVEL=debug
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+      - UPLOAD_PATH=/app/uploads
+      - MAX_FILE_SIZE=52428800
+      - RATE_LIMIT_MAX=1000
+      - CACHE_TTL=300
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - dev_uploads:/app/uploads
+      - dev_logs:/app/logs
+    depends_on:
+      mongodb-dev:
+        condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+    networks:
+      - portfolio-dev-network
+    command: npm run dev
+
+  # MongoDB Development
+  mongodb-dev:
+    image: mongo:7
+    container_name: portfolio-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=mongoroot123
+      - MONGO_INITDB_DATABASE=portfolio_development
+    volumes:
+      - mongodb_dev_data:/data/db
+      - ./docker/mongo-init-dev.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - portfolio-dev-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command: mongod --auth --bind_ip_all
+
+  # Redis Development
+  redis-dev:
+    image: redis:7-alpine
+    container_name: portfolio-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - portfolio-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    command: redis-server --requirepass redis123
+
+  # MongoDB Express para desenvolvimento
+  mongo-express-dev:
+    image: mongo-express:latest
+    container_name: portfolio-mongo-express-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=mongoroot123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:mongoroot123@mongodb-dev:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=express123
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+    depends_on:
+      - mongodb-dev
+    networks:
+      - portfolio-dev-network
+
+  # Redis Commander para desenvolvimento
+  redis-commander-dev:
+    image: rediscommander/redis-commander:latest
+    container_name: portfolio-redis-commander-dev
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis-dev:6379:0:redis123
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=commander123
+    depends_on:
+      - redis-dev
+    networks:
+      - portfolio-dev-network
+
+  # MailHog para desenvolvimento (email testing)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: portfolio-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - portfolio-dev-network
+
+# Dockerfile para desenvolvimento
+---
+# Dockerfile.dev
+FROM node:18-alpine
+
+# Instalar dependências para desenvolvimento
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    curl
+
+# Criar diretório de trabalho
+WORKDIR /app
+
+# Instalar nodemon globalmente
+RUN npm install -g nodemon ts-node
+
+# Copiar package files
+COPY package*.json ./
+
+# Instalar todas as dependências (incluindo dev)
+RUN npm install
+
+# Copiar código fonte
+COPY . .
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads temp backups
+
+# Expor porta e debug port
+EXPOSE 5000 9229
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Comando padrão para desenvolvimento
+CMD ["npm", "run", "dev"]
+
+# Volumes para desenvolvimento
+volumes:
+  mongodb_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  dev_uploads:
+    driver: local
+  dev_logs:
+    driver: local
+
+# Network para desenvolvimento
+networks:
+  portfolio-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

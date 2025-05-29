@@ -1,7 +1,7 @@
 // ===== src/services/ConfigurationService.ts =====
 import { Configuration } from '../models/Configuration';
-import { LoggerService } from './LoggerService';
-import { CacheService } from './CacheService';
+import { LoggerService } from '../services/LoggerService';
+import { CacheService } from '../services/CacheService';
 import { ValidationError } from 'joi';
 
 export interface SiteConfiguration {

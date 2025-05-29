@@ -36,13 +36,15 @@ async function startServer(): Promise<void> {
       );
     }
 
-    // Conectar aos serviços
+    // Conectar aos serviços na ordem correta
     logger.info('📡 Conectando aos serviços...');
     
+    // 1. Conectar ao banco de dados (obrigatório)
     const database = DatabaseService.getInstance();
     await database.connect();
     logger.info('✅ MongoDB conectado');
 
+    // 2. Conectar ao cache (opcional)
     try {
       const cache = CacheService.getInstance();
       await cache.connect();
@@ -51,7 +53,7 @@ async function startServer(): Promise<void> {
       logger.warn('⚠️  Redis não disponível - continuando sem cache:', error);
     }
 
-    // Inicializar aplicação
+    // 3. Inicializar aplicação
     const app = new App();
     await app.start();
 
@@ -64,7 +66,7 @@ async function startServer(): Promise<void> {
     // Informações de desenvolvimento
     if (process.env.NODE_ENV === 'development') {
       logger.info('🔧 Modo de desenvolvimento ativo');
-      logger.info(`🔐 Admin login: http://localhost:${port}/api/auth/login`);
+      logger.info(`🔐 Admin login: http://localhost:${port}/api/admin/auth/login`);
       logger.info('📧 Email: admin@portfolio.com | Senha: admin123');
     }
 

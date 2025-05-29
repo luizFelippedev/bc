@@ -2,7 +2,6 @@
 import { LoggerService } from './LoggerService';
 import { DatabaseService } from './DatabaseService';
 import { CacheService } from './CacheService';
-import { ConfigurationService } from './ConfigurationService';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -65,7 +64,6 @@ export class SystemService {
   private logger = LoggerService.getInstance();
   private databaseService = DatabaseService.getInstance();
   private cacheService = CacheService.getInstance();
-  private configService = ConfigurationService.getInstance();
   
   private startTime = new Date();
   private maintenanceTasks: MaintenanceTask[] = [];
@@ -249,7 +247,7 @@ export class SystemService {
     usagePercentage: number;
   }> {
     try {
-      // Implementação básica - em produção, use bibliotecas específicas
+      // Implementação básica - funciona no Linux/Mac
       const { stdout } = await execAsync('df -h / | tail -1');
       const parts = stdout.trim().split(/\s+/);
       
@@ -268,7 +266,7 @@ export class SystemService {
       this.logger.debug('Erro ao verificar espaço em disco com df:', error);
     }
 
-    // Fallback para sistemas que não têm df
+    // Fallback para Windows ou quando df não funciona
     return {
       total: 100,
       free: 75,
@@ -294,20 +292,27 @@ export class SystemService {
     // Limpar logs antigos
     try {
       const logsPath = path.join(process.cwd(), 'logs');
-      const logFiles = await fs.readdir(logsPath);
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 30); // 30 dias
+      
+      try {
+        await fs.access(logsPath);
+        const logFiles = await fs.readdir(logsPath);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - 30); // 30 dias
 
-      for (const file of logFiles) {
-        const filePath = path.join(logsPath, file);
-        const stats = await fs.stat(filePath);
-        
-        if (stats.mtime < cutoffDate) {
-          const size = stats.size;
-          await fs.unlink(filePath);
-          cleaned.push(`Log file: ${file}`);
-          spaceFreed += size;
+        for (const file of logFiles) {
+          const filePath = path.join(logsPath, file);
+          const stats = await fs.stat(filePath);
+          
+          if (stats.mtime < cutoffDate) {
+            const size = stats.size;
+            await fs.unlink(filePath);
+            cleaned.push(`Log file: ${file}`);
+            spaceFreed += size;
+          }
         }
+      } catch (error) {
+        // Diretório não existe, criar
+        await fs.mkdir(logsPath, { recursive: true });
       }
     } catch (error) {
       errors.push(`Erro ao limpar logs: ${error}`);
@@ -335,14 +340,6 @@ export class SystemService {
       }
     } catch (error) {
       errors.push(`Erro ao limpar arquivos temporários: ${error}`);
-    }
-
-    // Limpar cache de uploads antigos (se necessário)
-    try {
-      // Esta seria uma lógica personalizada baseada nos seus requisitos
-      // Por exemplo, remover uploads órfãos que não estão referenciados no banco
-    } catch (error) {
-      errors.push(`Erro ao limpar cache de uploads: ${error}`);
     }
 
     this.logger.info('Limpeza do sistema concluída', {
@@ -394,18 +391,6 @@ export class SystemService {
           if (result.status !== 'healthy') {
             this.logger.warn('System health check failed', result);
           }
-        },
-      },
-      {
-        id: 'backup',
-        name: 'Database Backup',
-        description: 'Create database backup',
-        frequency: 'weekly',
-        nextRun: this.calculateNextRun('weekly'),
-        enabled: process.env.NODE_ENV === 'production',
-        task: async () => {
-          // Integrar com BackupService se disponível
-          this.logger.info('Database backup executado');
         },
       },
     ];
@@ -513,10 +498,15 @@ export class SystemService {
   /**
    * Obter tarefas de manutenção
    */
-  public getMaintenanceTasks(): MaintenanceTask[] {
+  public getMaintenanceTasks(): Omit<MaintenanceTask, 'task'>[] {
     return this.maintenanceTasks.map(task => ({
-      ...task,
-      task: undefined as any, // Não expor a função
+      id: task.id,
+      name: task.name,
+      description: task.description,
+      frequency: task.frequency,
+      lastRun: task.lastRun,
+      nextRun: task.nextRun,
+      enabled: task.enabled,
     }));
   }
 
@@ -576,5 +566,22 @@ export class SystemService {
       },
       storage: await this.checkDiskSpace(),
     };
+  }
+
+  /**
+   * Criar diretórios necessários
+   */
+  public async ensureDirectories(): Promise<void> {
+    const directories = ['logs', 'uploads', 'backups', 'exports', 'temp'];
+    
+    for (const dir of directories) {
+      try {
+        const dirPath = path.join(process.cwd(), dir);
+        await fs.mkdir(dirPath, { recursive: true });
+        this.logger.debug(`Diretório assegurado: ${dir}`);
+      } catch (error) {
+        this.logger.error(`Erro ao criar diretório ${dir}:`, error);
+      }
+    }
   }
 }

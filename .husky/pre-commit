@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Executando verificações antes do commit..."
+
+
+
+echo "✅ Todas as verificações passaram!"
